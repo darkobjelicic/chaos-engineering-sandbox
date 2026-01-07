@@ -1,0 +1,123 @@
+services:
+  rabbitmq:
+    image: rabbitmq:3.11-management
+    ports:
+      - '5672:5672'
+      - '15672:15672'
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+
+  postgres-auth:
+    image: postgres:14
+    environment:
+      POSTGRES_DB: auth_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - '5432:5432'
+    volumes:
+      - pgdata_auth:/var/lib/postgresql/data
+
+  postgres-book:
+    image: postgres:14
+    environment:
+      POSTGRES_DB: book_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - pgdata_book:/var/lib/postgresql/data
+
+  postgres-inventory:
+    image: postgres:14
+    environment:
+      POSTGRES_DB: inventory_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - pgdata_inventory:/var/lib/postgresql/data
+
+  postgres-order:
+    image: postgres:14
+    environment:
+      POSTGRES_DB: order_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - pgdata_order:/var/lib/postgresql/data
+
+  auth-service:
+    build: ./services/auth
+    depends_on:
+      - postgres-auth
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres-auth:5432/auth_db
+      SECRET_KEY: supersecretdevkey
+    ports:
+      - '8001:8000'
+
+  book-service:
+    build: ./services/book
+    depends_on:
+      - postgres-book
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres-book:5432/book_db
+    ports:
+      - '8002:8000'
+
+  inventory-service:
+    build: ./services/inventory
+    depends_on:
+      - postgres-inventory
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres-inventory:5432/inventory_db
+    ports:
+      - '8003:8000'
+
+  order-service:
+    build: ./services/order
+    depends_on:
+      - postgres-order
+      - rabbitmq
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres-order:5432/order_db
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+    ports:
+      - '8004:8000'
+
+  notification-service:
+    build: ./services/notification
+    depends_on:
+      - rabbitmq
+    environment:
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+    ports:
+      - '8005:8000'
+
+  api-gateway:
+    build: ./services/gateway
+    depends_on:
+      - auth-service
+      - book-service
+      - order-service
+    ports:
+      - '8000:8000'
+
+  frontend:
+    build: ./frontend
+    ports:
+      - '3000:3000'
+
+  adminer:
+    image: adminer:latest
+    restart: always
+    ports:
+      - '8080:8080'
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres-auth
+
+volumes:
+  pgdata_auth:
+  pgdata_book:
+  pgdata_inventory:
+  pgdata_order:
