@@ -42,7 +42,6 @@ class Order(SQLModel, table=True):
 
 
 class OrderCreate(SQLModel):
-    user_id: int
     book_id: int
     quantity: int
 
@@ -59,8 +58,8 @@ def get_session():
 async def init_rabbitmq():
     """Inicijalizuje RabbitMQ konekciju sa retry logikom"""
     global rabbitmq_connection, rabbitmq_channel
-    max_retries = 5
-    
+    max_retries = 20
+
     for attempt in range(max_retries):
         try:
             rabbitmq_connection = await aio_pika.connect_robust(RABBITMQ_URL)
@@ -68,9 +67,12 @@ async def init_rabbitmq():
             logger.info("✓ Order service: RabbitMQ connected")
             return True
         except Exception as e:
-            logger.warning(f"RabbitMQ connection attempt {attempt + 1}/{max_retries} failed: {e}")
+            wait = min(2 ** attempt, 30)
+            logger.warning(
+                f"RabbitMQ connection attempt {attempt + 1}/{max_retries} failed: {e}; retrying in {wait}s"
+            )
             if attempt < max_retries - 1:
-                await asyncio.sleep(2)
+                await asyncio.sleep(wait)
             else:
                 logger.error("✗ Order service: RabbitMQ connection failed after retries")
                 return False
@@ -174,6 +176,22 @@ async def get_order(order_id: int, current_user: dict = Depends(_get_current_use
     if order.user_id != current_user.get("id"):
         raise HTTPException(status_code=403, detail="Nemate pristup ovoj narudžbini")
     return order
+
+
+@app.on_event("startup")
+async def rabbitmq_startup_init():
+    """Try to initialize RabbitMQ at startup to avoid lazy init during request handling."""
+    global rabbitmq_initialized
+    try:
+        logger.info("🔧 Order service: Auto-initializing RabbitMQ at startup...")
+        ok = await init_rabbitmq()
+        if ok:
+            rabbitmq_initialized = True
+            logger.info("✓ Order service: RabbitMQ initialized at startup")
+        else:
+            logger.warning("⚠ Order service: RabbitMQ init failed at startup; will retry lazily on demand")
+    except Exception as e:
+        logger.exception("Order service startup RabbitMQ init error: %s", e)
 
 
 @app.post("/orders", response_model=Order)
