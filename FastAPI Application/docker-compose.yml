@@ -7,6 +7,12 @@ services:
     environment:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "status"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   postgres-auth:
     image: postgres:14
@@ -68,7 +74,10 @@ services:
   inventory-service:
     build: ./services/inventory
     depends_on:
-      - postgres-inventory
+      postgres-inventory:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
     environment:
       DATABASE_URL: postgresql://postgres:postgres@postgres-inventory:5432/inventory_db
     ports:
@@ -77,8 +86,10 @@ services:
   order-service:
     build: ./services/order
     depends_on:
-      - postgres-order
-      - rabbitmq
+      postgres-order:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
     environment:
       DATABASE_URL: postgresql://postgres:postgres@postgres-order:5432/order_db
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
@@ -88,7 +99,8 @@ services:
   notification-service:
     build: ./services/notification
     depends_on:
-      - rabbitmq
+      rabbitmq:
+        condition: service_healthy
     environment:
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
     ports:
@@ -112,7 +124,7 @@ services:
     image: adminer:latest
     restart: always
     ports:
-      - '8080:8080'
+      - '8081:8080'
     environment:
       ADMINER_DEFAULT_SERVER: postgres-auth
 

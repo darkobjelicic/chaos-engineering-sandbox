@@ -54,8 +54,8 @@ consumer_running = False
 async def init_rabbitmq():
     """Inicijalizuje RabbitMQ konekciju sa retry logikom"""
     global rabbitmq_connection, rabbitmq_channel
-    max_retries = 5
-    
+    max_retries = 20
+
     for attempt in range(max_retries):
         try:
             rabbitmq_connection = await aio_pika.connect_robust(RABBITMQ_URL)
@@ -63,9 +63,12 @@ async def init_rabbitmq():
             logger.info("✓ Inventory service: RabbitMQ connected")
             return True
         except Exception as e:
-            logger.warning(f"RabbitMQ connection attempt {attempt + 1}/{max_retries} failed: {e}")
+            wait = min(2 ** attempt, 30)
+            logger.warning(
+                f"RabbitMQ connection attempt {attempt + 1}/{max_retries} failed: {e}; retrying in {wait}s"
+            )
             if attempt < max_retries - 1:
-                await asyncio.sleep(2)
+                await asyncio.sleep(wait)
             else:
                 logger.error("✗ Inventory service: RabbitMQ connection failed after retries")
                 return False
