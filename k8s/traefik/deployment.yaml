@@ -1,0 +1,69 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: traefik
+  namespace: traefik
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: traefik
+  template:
+    metadata:
+      labels:
+        app: traefik
+    spec:
+      serviceAccountName: traefik
+      containers:
+      - name: traefik
+        image: traefik:v2.10.5
+        ports:
+        - name: web
+          containerPort: 80
+          protocol: TCP
+        - name: websecure
+          containerPort: 443
+          protocol: TCP
+        - name: admin
+          containerPort: 8080
+          protocol: TCP
+        args:
+          - --api.dashboard=true
+          - --api.insecure=true
+          - --entrypoints.web.address=:80
+          - --entrypoints.websecure.address=:443
+          - --providers.kubernetescrd=true
+          - --providers.kubernetescrd.ingressclass=traefik
+          - --certificatesresolvers.letsencrypt.acme.email=admin@devopsgeek.dev
+          - --certificatesresolvers.letsencrypt.acme.storage=/data/acme.json
+          - --certificatesresolvers.letsencrypt.acme.httpchallenge=true
+          - --certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web
+          - --entrypoints.web.http.redirections.entrypoint.to=websecure
+          - --entrypoints.web.http.redirections.entrypoint.scheme=https
+          - --log.level=INFO
+        volumeMounts:
+        - name: acme-storage
+          mountPath: /data
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+      volumes:
+      - name: acme-storage
+        persistentVolumeClaim:
+          claimName: traefik-acme-pvc
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: traefik-acme-pvc
+  namespace: traefik
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
