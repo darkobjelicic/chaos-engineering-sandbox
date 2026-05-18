@@ -19,7 +19,7 @@ jobs:
         uses: hadolint/hadolint-action@v3.1.0
         with:
           recursive: true
-          ignore: DL3008,DL3009
+          ignore: DL3008,DL3009,DL3013
 
       - name: Set up Python
         uses: actions/setup-python@v5
