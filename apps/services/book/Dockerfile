@@ -8,6 +8,7 @@ RUN /venv/bin/pip install --no-cache-dir -r requirements.txt
 FROM python:3.11-slim AS runtime
 WORKDIR /app
 RUN apt-get update && apt-get upgrade -y && rm -rf /var/lib/apt/lists/*
+RUN pip install --no-cache-dir --upgrade setuptools wheel
 RUN addgroup --system --gid 1001 app && \
     adduser --system --uid 1001 --ingroup app app
 COPY --from=builder /venv /venv
