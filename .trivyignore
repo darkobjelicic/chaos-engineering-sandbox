@@ -1,0 +1,13 @@
+# Trivy vulnerability ignore list
+# Format: CVE-ID  # reason
+
+# CVE-2025-69720 - ncurses buffer overflow
+# Status: affected - no fix available in current debian packages
+# ncurses is not used directly by the application
+CVE-2025-69720
+
+# CVE-2024-47874 - starlette multipart/form-data DoS
+# Status: fix requires FastAPI upgrade 0.99.1 → 0.115.x
+# which involves Pydantic v1 → v2 migration and SQLModel upgrade
+# Tracked as future technical debt
+CVE-2024-47874
