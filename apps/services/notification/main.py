@@ -14,7 +14,7 @@ LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
 logger = logging.getLogger("notification")
 logger.setLevel(LOG_LEVEL)
 handler = logging.StreamHandler()
-fmt = jsonlogger.JsonFormatter('%(asctime)s %(name)s %(levelname)s %(message)s')
+fmt = jsonlogger.JsonFormatter("%(asctime)s %(name)s %(levelname)s %(message)s")
 handler.setFormatter(fmt)
 logger.addHandler(handler)
 
@@ -47,54 +47,53 @@ async def init_rabbitmq():
             logger.info("✓ Notification service: RabbitMQ connected")
             return True
         except Exception as e:
-            wait = min(2 ** attempt, 30)
+            wait = min(2**attempt, 30)
             logger.warning(
                 f"RabbitMQ connection attempt {attempt + 1}/{max_retries} failed: {e}; retrying in {wait}s"
             )
             if attempt < max_retries - 1:
                 await asyncio.sleep(wait)
             else:
-                logger.error("✗ Notification service: RabbitMQ connection failed after retries")
+                logger.error(
+                    "✗ Notification service: RabbitMQ connection failed after retries"
+                )
                 return False
 
 
 async def consume_order_events():
     """Konzumira order.created event-e - sa aio-pika robust consumer loop-om"""
     logger.info("🎯 Notification consumer starting...")
-    
+
     retry_count = 0
     max_retries = 5
-    
+
     while True:
         try:
             if not rabbitmq_channel:
                 print("⚠ RabbitMQ nije dostupan, čekam...")
                 await asyncio.sleep(5)
                 continue
-            
+
             # Pravi exchange i queue (samo prvi put ili nakon greške)
             if retry_count == 0:
                 logger.info("📦 Notification: Setting up exchange and queue...")
-            
+
             exchange = await rabbitmq_channel.declare_exchange(
-                "orders.events",
-                aio_pika.ExchangeType.FANOUT,
-                durable=True
+                "orders.events", aio_pika.ExchangeType.FANOUT, durable=True
             )
-            
+
             queue = await rabbitmq_channel.declare_queue(
-                "notification.orders",
-                durable=True
+                "notification.orders", durable=True
             )
-            
+
             await queue.bind(exchange)
-            
+
             # Sapostavi QoS - prefetch samo 1 poruku za obrada
             await rabbitmq_channel.set_qos(prefetch_count=1)
-            
+
             logger.info("✓ Notification service: Listening for order.created events...")
             retry_count = 0  # Reset retry counter na uspešnu konekciju
-            
+
             # Budi-se svaki put kada ima nove poruke (ack enabled)
             async with queue.iterator(no_ack=False) as queue_iter:
                 async for message in queue_iter:
@@ -132,18 +131,24 @@ async def consume_order_events():
                                 quantity = event_data.get("quantity")
 
                                 # Send notification (here: log)
-                                logger.info(f"📧 NOTIFICATION: Order #{order_id} created by user {user_id}")
-                                logger.info(f"   └─ Book ID: {book_id}, Quantity: {quantity}")
+                                logger.info(
+                                    f"📧 NOTIFICATION: Order #{order_id} created by user {user_id}"
+                                )
+                                logger.info(
+                                    f"   └─ Book ID: {book_id}, Quantity: {quantity}"
+                                )
                         except Exception as e:
                             logger.exception("Error processing event: %s", e)
-            
+
         except Exception as e:
             logger.exception("Notification consumer error: %s", e)
             retry_count += 1
-            wait_time = min(5 * (2 ** retry_count), 30)
-            logger.warning(f"⏸ Retrying in {wait_time}s ({retry_count}/{max_retries})...")
+            wait_time = min(5 * (2**retry_count), 30)
+            logger.warning(
+                f"⏸ Retrying in {wait_time}s ({retry_count}/{max_retries})..."
+            )
             await asyncio.sleep(wait_time)
-            
+
             if retry_count >= max_retries:
                 logger.error("✗ Max retries reached, stopping consumer")
                 break
@@ -163,7 +168,7 @@ def health():
 async def notify_status():
     """Prikazuje status i inicijalizuje RabbitMQ ako nije inicijalizovan"""
     global rabbitmq_initialized, consumer_running
-    
+
     if not rabbitmq_initialized:
         try:
             logger.info("🔧 Initializing RabbitMQ in notification service...")
@@ -177,8 +182,12 @@ async def notify_status():
         except Exception as e:
             logger.exception("RabbitMQ init failed: %s", e)
             return {"status": "error", "message": str(e)}
-    
-    return {"status": "ok", "service": "notification", "rabbitmq": "connected" if rabbitmq_initialized else "not_connected"}
+
+    return {
+        "status": "ok",
+        "service": "notification",
+        "rabbitmq": "connected" if rabbitmq_initialized else "not_connected",
+    }
 
 
 @app.on_event("startup")
@@ -200,4 +209,3 @@ async def startup():
             logger.warning("⚠ RabbitMQ init failed at startup; consumer not started")
     except Exception as e:
         logger.exception("Startup RabbitMQ init error: %s", e)
-

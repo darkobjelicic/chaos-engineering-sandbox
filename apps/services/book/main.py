@@ -13,11 +13,13 @@ LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
 logger = logging.getLogger("book")
 logger.setLevel(LOG_LEVEL)
 handler = logging.StreamHandler()
-fmt = jsonlogger.JsonFormatter('%(asctime)s %(name)s %(levelname)s %(message)s')
+fmt = jsonlogger.JsonFormatter("%(asctime)s %(name)s %(levelname)s %(message)s")
 handler.setFormatter(fmt)
 logger.addHandler(handler)
 
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@postgres-book:5432/book_db")
+DATABASE_URL = os.getenv(
+    "DATABASE_URL", "postgresql://postgres:postgres@postgres-book:5432/book_db"
+)
 
 engine = create_engine(DATABASE_URL, echo=False)
 
@@ -74,22 +76,44 @@ def on_startup():
             logger.info("✓ Book DB initialized")
             break
         except Exception as e:
-            logger.warning(f"DB connection attempt {attempt + 1}/{max_retries} failed: {e}")
+            logger.warning(
+                f"DB connection attempt {attempt + 1}/{max_retries} failed: {e}"
+            )
             if attempt < max_retries - 1:
                 time.sleep(2)
             else:
                 raise
-    
+
     # seed test podatke
     try:
         with Session(engine) as session:
             existing = session.exec(select(Book)).all()
             if len(existing) == 0:
                 test_books = [
-                    Book(title="Rat i mir", author="Lav Tolstoj", price=25.99, description="Klasični roman o ljubavi, ratu i istoriji"),
-                    Book(title="Prestupljenje i kazna", author="Fjodor Dostojevski", price=22.50, description="Psihološki roman o krivici i iskupljenju"),
-                    Book(title="Ponos i predrasuda", author="Džein Ostin", price=18.99, description="Romantični roman iz 19. veka"),
-                    Book(title="Devet priča", author="Isak Asimov", price=15.75, description="Zbirka naučnofantastičnih priča"),
+                    Book(
+                        title="Rat i mir",
+                        author="Lav Tolstoj",
+                        price=25.99,
+                        description="Klasični roman o ljubavi, ratu i istoriji",
+                    ),
+                    Book(
+                        title="Prestupljenje i kazna",
+                        author="Fjodor Dostojevski",
+                        price=22.50,
+                        description="Psihološki roman o krivici i iskupljenju",
+                    ),
+                    Book(
+                        title="Ponos i predrasuda",
+                        author="Džein Ostin",
+                        price=18.99,
+                        description="Romantični roman iz 19. veka",
+                    ),
+                    Book(
+                        title="Devet priča",
+                        author="Isak Asimov",
+                        price=15.75,
+                        description="Zbirka naučnofantastičnih priča",
+                    ),
                 ]
                 for book in test_books:
                     session.add(book)
@@ -130,7 +154,9 @@ def create_book(book: BookCreate, session: Session = Depends(get_session)):
 
 
 @app.put("/books/{book_id}", response_model=Book)
-def update_book(book_id: int, book: BookUpdate, session: Session = Depends(get_session)):
+def update_book(
+    book_id: int, book: BookUpdate, session: Session = Depends(get_session)
+):
     db_book = session.get(Book, book_id)
     if not db_book:
         raise HTTPException(status_code=404, detail="Knjiga nije pronađena")

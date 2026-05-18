@@ -1,0 +1,110 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Lint Dockerfiles (hadolint)
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          recursive: true
+          ignore: DL3008,DL3009
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install lint tools
+        run: pip install black yamllint
+
+      - name: Check Python formatting (black)
+        run: black --check apps/services
+
+      - name: Lint YAML files
+        run: yamllint -d relaxed .
+
+  security:
+    name: Security
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install bandit
+        run: pip install bandit
+
+      - name: Python security scan (bandit)
+        run: bandit -r apps/services --severity-level high
+
+      - name: Filesystem vulnerability scan (trivy)
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: fs
+          scan-ref: .
+          severity: HIGH,CRITICAL
+          exit-code: 1
+
+  build:
+    name: Build & Scan / ${{ matrix.service }}
+    runs-on: ubuntu-latest
+    needs: security
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - service: auth
+            context: apps/services/auth
+          - service: book
+            context: apps/services/book
+          - service: gateway
+            context: apps/services/gateway
+          - service: inventory
+            context: apps/services/inventory
+          - service: notification
+            context: apps/services/notification
+          - service: order
+            context: apps/services/order
+          - service: frontend
+            context: apps/frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build image
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          push: false
+          load: true
+          tags: chaos-sandbox/${{ matrix.service }}:ci
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.service }}
+
+      - name: Scan image for vulnerabilities (trivy)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: chaos-sandbox/${{ matrix.service }}:ci
+          severity: HIGH,CRITICAL
+          exit-code: 1

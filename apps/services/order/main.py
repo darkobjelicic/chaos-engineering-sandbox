@@ -18,11 +18,13 @@ LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
 logger = logging.getLogger("order")
 logger.setLevel(LOG_LEVEL)
 handler = logging.StreamHandler()
-fmt = jsonlogger.JsonFormatter('%(asctime)s %(name)s %(levelname)s %(message)s')
+fmt = jsonlogger.JsonFormatter("%(asctime)s %(name)s %(levelname)s %(message)s")
 handler.setFormatter(fmt)
 logger.addHandler(handler)
 
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@postgres-order:5432/order_db")
+DATABASE_URL = os.getenv(
+    "DATABASE_URL", "postgresql://postgres:postgres@postgres-order:5432/order_db"
+)
 RABBITMQ_URL = os.getenv("RABBITMQ_URL", "amqp://guest:guest@rabbitmq:5672/")
 AUTH_SERVICE_URL = os.getenv("AUTH_SERVICE_URL", "http://auth-service:8000")
 
@@ -67,14 +69,16 @@ async def init_rabbitmq():
             logger.info("✓ Order service: RabbitMQ connected")
             return True
         except Exception as e:
-            wait = min(2 ** attempt, 30)
+            wait = min(2**attempt, 30)
             logger.warning(
                 f"RabbitMQ connection attempt {attempt + 1}/{max_retries} failed: {e}; retrying in {wait}s"
             )
             if attempt < max_retries - 1:
                 await asyncio.sleep(wait)
             else:
-                logger.error("✗ Order service: RabbitMQ connection failed after retries")
+                logger.error(
+                    "✗ Order service: RabbitMQ connection failed after retries"
+                )
                 return False
 
 
@@ -83,29 +87,28 @@ async def publish_order_event(order_id: int, user_id: int, book_id: int, quantit
     if not rabbitmq_channel:
         logger.warning("⚠ RabbitMQ nije dostupan, event se ne može objaviti")
         return
-    
+
     try:
         exchange = await rabbitmq_channel.declare_exchange(
-            "orders.events",
-            aio_pika.ExchangeType.FANOUT,
-            durable=True
+            "orders.events", aio_pika.ExchangeType.FANOUT, durable=True
         )
-        
+
         event_data = {
             "event": "order.created",
             "order_id": order_id,
             "user_id": user_id,
             "book_id": book_id,
-            "quantity": quantity
+            "quantity": quantity,
         }
-        
+
         message = aio_pika.Message(
-            body=json.dumps(event_data).encode(),
-            content_type="application/json"
+            body=json.dumps(event_data).encode(), content_type="application/json"
         )
-        
+
         await exchange.publish(message, routing_key="")
-        logger.info(f"✓ Event published: order.created (order_id={order_id}, book_id={book_id}, qty={quantity})")
+        logger.info(
+            f"✓ Event published: order.created (order_id={order_id}, book_id={book_id}, qty={quantity})"
+        )
     except Exception as e:
         logger.exception("✗ Failed to publish event: %s", e)
 
@@ -134,7 +137,9 @@ def on_startup():
             logger.info("✓ Order DB initialized")
             break
         except Exception as e:
-            logger.warning(f"DB connection attempt {attempt + 1}/{max_retries} failed: {e}")
+            logger.warning(
+                f"DB connection attempt {attempt + 1}/{max_retries} failed: {e}"
+            )
             if attempt < max_retries - 1:
                 time.sleep(2)
             else:
@@ -152,7 +157,9 @@ async def _get_current_user_from_header(authorization: Optional[str] = Header(No
         raise HTTPException(status_code=401, detail="Missing Authorization header")
     try:
         async with httpx.AsyncClient() as client:
-            r = await client.get(f"{AUTH_SERVICE_URL}/me", headers={"Authorization": authorization})
+            r = await client.get(
+                f"{AUTH_SERVICE_URL}/me", headers={"Authorization": authorization}
+            )
         if r.status_code != 200:
             raise HTTPException(status_code=401, detail="Invalid token")
         return r.json()
@@ -162,14 +169,23 @@ async def _get_current_user_from_header(authorization: Optional[str] = Header(No
 
 
 @app.get("/orders", response_model=List[Order])
-async def list_orders(current_user: dict = Depends(_get_current_user_from_header), session: Session = Depends(get_session)):
+async def list_orders(
+    current_user: dict = Depends(_get_current_user_from_header),
+    session: Session = Depends(get_session),
+):
     # Return only orders for the authenticated user
-    orders = session.exec(select(Order).where(Order.user_id == current_user.get("id"))).all()
+    orders = session.exec(
+        select(Order).where(Order.user_id == current_user.get("id"))
+    ).all()
     return orders
 
 
 @app.get("/orders/{order_id}", response_model=Order)
-async def get_order(order_id: int, current_user: dict = Depends(_get_current_user_from_header), session: Session = Depends(get_session)):
+async def get_order(
+    order_id: int,
+    current_user: dict = Depends(_get_current_user_from_header),
+    session: Session = Depends(get_session),
+):
     order = session.get(Order, order_id)
     if not order:
         raise HTTPException(status_code=404, detail="Narudžbina nije pronađena")
@@ -189,16 +205,20 @@ async def rabbitmq_startup_init():
             rabbitmq_initialized = True
             logger.info("✓ Order service: RabbitMQ initialized at startup")
         else:
-            logger.warning("⚠ Order service: RabbitMQ init failed at startup; will retry lazily on demand")
+            logger.warning(
+                "⚠ Order service: RabbitMQ init failed at startup; will retry lazily on demand"
+            )
     except Exception as e:
         logger.exception("Order service startup RabbitMQ init error: %s", e)
 
 
 @app.post("/orders", response_model=Order)
-async def create_order(order_data: OrderCreate, request: Request, session: Session = Depends(get_session)):
+async def create_order(
+    order_data: OrderCreate, request: Request, session: Session = Depends(get_session)
+):
     """Kreira novu narudžbinu i publlikuje event"""
     global rabbitmq_initialized
-    
+
     # Inicijalizuj RabbitMQ pri prvom zahtevу
     if not rabbitmq_initialized:
         try:
@@ -206,7 +226,7 @@ async def create_order(order_data: OrderCreate, request: Request, session: Sessi
             rabbitmq_initialized = True
         except Exception as e:
             logger.exception("⚠ RabbitMQ init failed: %s", e)
-    
+
     # Validate token and ensure user_id matches authenticated user
     auth_header = request.headers.get("Authorization")
     if not auth_header:
@@ -220,16 +240,16 @@ async def create_order(order_data: OrderCreate, request: Request, session: Sessi
     session.add(order)
     session.commit()
     session.refresh(order)
-    
+
     # Publlikuj event
     try:
         await publish_order_event(
             order_id=order.id,
             user_id=order.user_id,
             book_id=order.book_id,
-            quantity=order.quantity
+            quantity=order.quantity,
         )
     except Exception as e:
         logger.exception("⚠ Could not publish event: %s", e)
-    
+
     return order

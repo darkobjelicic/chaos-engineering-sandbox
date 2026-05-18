@@ -16,11 +16,13 @@ LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
 logger = logging.getLogger("auth")
 logger.setLevel(LOG_LEVEL)
 handler = logging.StreamHandler()
-fmt = jsonlogger.JsonFormatter('%(asctime)s %(name)s %(levelname)s %(message)s')
+fmt = jsonlogger.JsonFormatter("%(asctime)s %(name)s %(levelname)s %(message)s")
 handler.setFormatter(fmt)
 logger.addHandler(handler)
 
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@postgres-auth:5432/auth_db")
+DATABASE_URL = os.getenv(
+    "DATABASE_URL", "postgresql://postgres:postgres@postgres-auth:5432/auth_db"
+)
 SECRET_KEY = os.getenv("SECRET_KEY", "devsecret")
 ALGORITHM = "HS256"
 
@@ -29,20 +31,24 @@ engine = create_engine(DATABASE_URL, echo=False)
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login")
 
+
 class User(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     email: str = Field(index=True, nullable=False, unique=True)
     name: Optional[str] = None
     hashed_password: str
 
+
 class UserCreate(BaseModel):
     email: str
     password: str
     name: Optional[str] = None
 
+
 class Token(BaseModel):
     access_token: str
     token_type: str = "bearer"
+
 
 app = FastAPI(title="Auth Service")
 
@@ -101,7 +107,10 @@ def register(user: UserCreate, session: Session = Depends(get_session)):
 
 
 @app.post("/login", response_model=Token)
-def login(form_data: OAuth2PasswordRequestForm = Depends(), session: Session = Depends(get_session)):
+def login(
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    session: Session = Depends(get_session),
+):
     statement = select(User).where(User.email == form_data.username)
     user = session.exec(statement).first()
     if not user or not verify_password(form_data.password, user.hashed_password):
@@ -110,7 +119,9 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), session: Session = D
     return {"access_token": token, "token_type": "bearer"}
 
 
-def get_current_user(token: str = Depends(oauth2_scheme), session: Session = Depends(get_session)):
+def get_current_user(
+    token: str = Depends(oauth2_scheme), session: Session = Depends(get_session)
+):
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         email: str = payload.get("sub")
@@ -127,7 +138,11 @@ def get_current_user(token: str = Depends(oauth2_scheme), session: Session = Dep
 
 @app.get("/me")
 def read_me(current_user: User = Depends(get_current_user)):
-    return {"id": current_user.id, "email": current_user.email, "name": current_user.name}
+    return {
+        "id": current_user.id,
+        "email": current_user.email,
+        "name": current_user.name,
+    }
 
 
 @app.get("/health")
