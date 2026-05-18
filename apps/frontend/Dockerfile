@@ -1,7 +1,11 @@
-FROM node:18-alpine
+FROM node:18-alpine AS builder
 WORKDIR /app
-COPY package.json yarn.lock* package-lock.json* ./
-# use legacy-peer-deps to avoid Vite / plugin peer dependency conflicts in CI build
-RUN if [ -f yarn.lock ]; then yarn --frozen-lockfile; elif [ -f package-lock.json ]; then npm ci --legacy-peer-deps; else npm i --legacy-peer-deps; fi
+COPY package.json package-lock.json* yarn.lock* ./
+RUN npm ci --legacy-peer-deps
 COPY . .
-CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "3000"]
+RUN npm run build
+
+FROM nginxinc/nginx-unprivileged:alpine AS runtime
+COPY --from=builder /app/dist /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+EXPOSE 8080
