@@ -3,7 +3,6 @@ uvicorn[standard]==0.23.2
 sqlmodel==0.0.8
 psycopg2-binary==2.9.11
 python-jose[cryptography]==3.4.0
-pyasn1==0.6.3
 passlib[bcrypt]==1.7.4
 python-dotenv==1.0.0
 python-json-logger==2.0.4
