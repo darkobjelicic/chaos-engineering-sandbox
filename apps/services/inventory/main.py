@@ -16,11 +16,14 @@ LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
 logger = logging.getLogger("inventory")
 logger.setLevel(LOG_LEVEL)
 handler = logging.StreamHandler()
-fmt = jsonlogger.JsonFormatter('%(asctime)s %(name)s %(levelname)s %(message)s')
+fmt = jsonlogger.JsonFormatter("%(asctime)s %(name)s %(levelname)s %(message)s")
 handler.setFormatter(fmt)
 logger.addHandler(handler)
 
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@postgres-inventory:5432/inventory_db")
+DATABASE_URL = os.getenv(
+    "DATABASE_URL",
+    "postgresql://postgres:postgres@postgres-inventory:5432/inventory_db",
+)
 RABBITMQ_URL = os.getenv("RABBITMQ_URL", "amqp://guest:guest@rabbitmq:5672/")
 
 engine = create_engine(DATABASE_URL, echo=False)
@@ -63,54 +66,53 @@ async def init_rabbitmq():
             logger.info("✓ Inventory service: RabbitMQ connected")
             return True
         except Exception as e:
-            wait = min(2 ** attempt, 30)
+            wait = min(2**attempt, 30)
             logger.warning(
                 f"RabbitMQ connection attempt {attempt + 1}/{max_retries} failed: {e}; retrying in {wait}s"
             )
             if attempt < max_retries - 1:
                 await asyncio.sleep(wait)
             else:
-                logger.error("✗ Inventory service: RabbitMQ connection failed after retries")
+                logger.error(
+                    "✗ Inventory service: RabbitMQ connection failed after retries"
+                )
                 return False
 
 
 async def consume_order_events():
     """Konzumira order.created event-e i smanjuje zalihe - sa aio-pika robust consumer loop-om"""
     logger.info("🎯 Inventory consumer starting...")
-    
+
     retry_count = 0
     max_retries = 5
-    
+
     while True:
         try:
             if not rabbitmq_channel:
                 logger.warning("⚠ RabbitMQ nije dostupan, čekam...")
                 await asyncio.sleep(5)
                 continue
-            
+
             # Pravi exchange i queue (samo prvi put ili nakon greške)
             if retry_count == 0:
                 logger.info("📦 Inventory: Setting up exchange and queue...")
-            
+
             exchange = await rabbitmq_channel.declare_exchange(
-                "orders.events",
-                aio_pika.ExchangeType.FANOUT,
-                durable=True
+                "orders.events", aio_pika.ExchangeType.FANOUT, durable=True
             )
-            
+
             queue = await rabbitmq_channel.declare_queue(
-                "inventory.orders",
-                durable=True
+                "inventory.orders", durable=True
             )
-            
+
             await queue.bind(exchange)
-            
+
             # Sapostavi QoS - prefetch samo 1 poruku za obrada
             await rabbitmq_channel.set_qos(prefetch_count=1)
-            
+
             logger.info("✓ Inventory service: Listening for order.created events...")
             retry_count = 0  # Reset retry counter na uspešnu konekciju
-            
+
             # Budi-se svaki put kada ima nove poruke
             async with queue.iterator(no_ack=False) as queue_iter:
                 async for message in queue_iter:
@@ -121,34 +123,42 @@ async def consume_order_events():
                                 book_id = event_data.get("book_id")
                                 quantity = event_data.get("quantity")
                                 order_id = event_data.get("order_id")
-                                
+
                                 # Smanj zalihe u DB-u
                                 with Session(engine) as session:
                                     inv = session.exec(
-                                        select(Inventory).where(Inventory.book_id == book_id)
+                                        select(Inventory).where(
+                                            Inventory.book_id == book_id
+                                        )
                                     ).first()
-                                    
+
                                     if inv and inv.quantity >= quantity:
                                         inv.quantity -= quantity
                                         session.add(inv)
                                         session.commit()
-                                        logger.info(f"✓ Inventory updated: book_id={book_id}, new_qty={inv.quantity} (order_id={order_id})")
+                                        logger.info(
+                                            f"✓ Inventory updated: book_id={book_id}, new_qty={inv.quantity} (order_id={order_id})"
+                                        )
                                     else:
-                                        logger.warning(f"✗ Insufficient inventory for book_id={book_id}")
+                                        logger.warning(
+                                            f"✗ Insufficient inventory for book_id={book_id}"
+                                        )
                         except Exception as e:
                             logger.exception("✗ Error processing event: %s", e)
-            
+
         except Exception as e:
             logger.exception("✗ Inventory consumer error: %s", e)
             retry_count += 1
-            wait_time = min(5 * (2 ** retry_count), 30)
-            logger.warning(f"⏸ Retrying in {wait_time}s ({retry_count}/{max_retries})...")
+            wait_time = min(5 * (2**retry_count), 30)
+            logger.warning(
+                f"⏸ Retrying in {wait_time}s ({retry_count}/{max_retries})..."
+            )
             await asyncio.sleep(wait_time)
-            
+
             if retry_count >= max_retries:
                 logger.error("✗ Max retries reached, stopping consumer")
                 break
-                
+
         except Exception as e:
             logger.exception("✗ Inventory consumer error: %s", e)
             logger.warning("⏸ Restarting consumer in 5 seconds...")
@@ -174,7 +184,9 @@ async def startup():
             logger.info("✓ Inventory DB initialized")
             break
         except Exception as e:
-            logger.warning(f"DB connection attempt {attempt + 1}/{max_retries} failed: {e}")
+            logger.warning(
+                f"DB connection attempt {attempt + 1}/{max_retries} failed: {e}"
+            )
             if attempt < max_retries - 1:
                 time.sleep(2)
             else:
@@ -217,6 +229,7 @@ async def startup():
     except Exception as e:
         logger.exception("✗ RabbitMQ startup init failed: %s", e)
 
+
 @app.get("/health")
 def health():
     return {"status": "ok", "service": "inventory"}
@@ -234,7 +247,7 @@ def get_inventory(book_id: int, session: Session = Depends(get_session)):
 async def list_inventory(session: Session = Depends(get_session)):
     """Lista sve zalihe i inicijalizuje RabbitMQ ako nije inicijalizovan"""
     global rabbitmq_initialized, consumer_running
-    
+
     # Lazy inicijalizacija RabbitMQ i consumer-a
     if not rabbitmq_initialized:
         try:
@@ -250,11 +263,15 @@ async def list_inventory(session: Session = Depends(get_session)):
             await asyncio.sleep(0.5)
         except Exception as e:
             logger.exception("✗ RabbitMQ init failed: %s", e)
-    
+
     items = session.exec(select(Inventory)).all()
     return items
+
+
 @app.post("/inventory")
-def create_inventory(book_id: int, quantity: int, session: Session = Depends(get_session)):
+def create_inventory(
+    book_id: int, quantity: int, session: Session = Depends(get_session)
+):
     inv = Inventory(book_id=book_id, quantity=quantity)
     session.add(inv)
     session.commit()
@@ -263,7 +280,9 @@ def create_inventory(book_id: int, quantity: int, session: Session = Depends(get
 
 
 @app.put("/inventory/{book_id}")
-def update_inventory(book_id: int, quantity: int, session: Session = Depends(get_session)):
+def update_inventory(
+    book_id: int, quantity: int, session: Session = Depends(get_session)
+):
     inv = session.exec(select(Inventory).where(Inventory.book_id == book_id)).first()
     if not inv:
         inv = Inventory(book_id=book_id, quantity=quantity)
