@@ -11,3 +11,9 @@ CVE-2025-69720
 # which involves Pydantic v1 → v2 migration and SQLModel upgrade
 # Tracked as future technical debt
 CVE-2024-47874
+
+# CVE-2024-23342 - ecdsa Minerva timing attack
+# Status: affected - no fix available (library unmaintained)
+# ecdsa is a transitive dependency of python-jose, not used directly
+# python-jose uses cryptography library for actual crypto operations
+CVE-2024-23342
