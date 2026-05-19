@@ -78,14 +78,14 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Update image tags in dev overlay
+      - name: Update image tags in kind overlay
         run: |
           SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)
-          if [ ! -f deploy/overlays/dev/kustomization.yaml ]; then
+          if [ ! -f deploy/overlays/kind/kustomization.yaml ]; then
             echo "kustomization.yaml not yet created — skipping tag update"
             exit 0
           fi
-          cd deploy/overlays/dev
+          cd deploy/overlays/kind
           kustomize edit set image \
             darko999/auth-service=darko999/auth-service:${SHORT_SHA} \
             darko999/book-service=darko999/book-service:${SHORT_SHA} \
@@ -99,6 +99,6 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add deploy/overlays/dev/kustomization.yaml 2>/dev/null || true
+          git add deploy/overlays/kind/kustomization.yaml 2>/dev/null || true
           git diff --staged --quiet || git commit -m "ci: update image tags to $(echo ${{ github.sha }} | cut -c1-7)"
           git push

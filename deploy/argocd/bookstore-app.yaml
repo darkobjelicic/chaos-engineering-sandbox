@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: bookstore
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/darkobjelicic/chaos-engineering-sandbox.git
+    targetRevision: main
+    path: deploy/overlays/kind
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: bookstore
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

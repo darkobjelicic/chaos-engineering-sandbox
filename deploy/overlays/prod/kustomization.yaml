@@ -1,0 +1,60 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../base
+
+# Prod secrets are managed via Sealed Secrets — see deploy/overlays/prod/sealed-secrets/
+
+images:
+  - name: darko999/auth-service
+    newTag: latest
+  - name: darko999/book-service
+    newTag: latest
+  - name: darko999/api-gateway
+    newTag: latest
+  - name: darko999/inventory-service
+    newTag: latest
+  - name: darko999/notification-service
+    newTag: latest
+  - name: darko999/order-service
+    newTag: latest
+  - name: darko999/frontend
+    newTag: latest
+
+patches:
+  - patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 2
+    target:
+      kind: Deployment
+      name: "api-gateway|frontend|auth-service|book-service|inventory-service|order-service"
+
+  - patch: |-
+      - op: add
+        path: /spec/template/spec/containers/0/resources
+        value:
+          requests:
+            cpu: 250m
+            memory: 256Mi
+          limits:
+            cpu: 1000m
+            memory: 512Mi
+    target:
+      kind: Deployment
+      name: "auth-service|book-service|inventory-service|order-service|notification-service|api-gateway|frontend"
+
+  - patch: |-
+      - op: add
+        path: /spec/template/spec/containers/0/resources
+        value:
+          requests:
+            cpu: 500m
+            memory: 512Mi
+          limits:
+            cpu: 1000m
+            memory: 1Gi
+    target:
+      kind: Deployment
+      name: rabbitmq
