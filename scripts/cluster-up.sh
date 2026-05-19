@@ -45,7 +45,7 @@ log "Creating bookstore namespace..."
 kubectl create namespace bookstore --dry-run=client -o yaml | kubectl apply -f -
 
 log "Applying dev overlay..."
-kubectl apply -k deploy/overlays/dev
+kubectl apply -k deploy/overlays/kind
 
 log ""
 log "✓ Cluster ready!"
