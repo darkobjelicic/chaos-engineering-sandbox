@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: book-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: book-service
+  template:
+    metadata:
+      labels:
+        app: book-service
+    spec:
+      containers:
+        - name: book-service
+          image: darko999/book-service
+          ports:
+            - containerPort: 8000
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: book-service-secret
+                  key: database-url
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 5
+            failureThreshold: 6
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 30
+            periodSeconds: 15

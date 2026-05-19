@@ -1,0 +1,33 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: bookstore
+
+resources:
+  - namespace.yaml
+  - rabbitmq/deployment.yaml
+  - rabbitmq/service.yaml
+  - postgres/auth-statefulset.yaml
+  - postgres/auth-service.yaml
+  - postgres/book-statefulset.yaml
+  - postgres/book-service.yaml
+  - postgres/inventory-statefulset.yaml
+  - postgres/inventory-service.yaml
+  - postgres/order-statefulset.yaml
+  - postgres/order-service.yaml
+  - auth/deployment.yaml
+  - auth/service.yaml
+  - book/deployment.yaml
+  - book/service.yaml
+  - inventory/deployment.yaml
+  - inventory/service.yaml
+  - order/deployment.yaml
+  - order/service.yaml
+  - notification/deployment.yaml
+  - notification/service.yaml
+  - gateway/deployment.yaml
+  - gateway/service.yaml
+  - gateway/ingress.yaml
+  - frontend/deployment.yaml
+  - frontend/service.yaml
+  - frontend/ingress.yaml
