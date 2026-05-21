@@ -1,6 +1,9 @@
 import os
 import json
 import time
+from telemetry import setup_telemetry
+
+setup_telemetry()
 import asyncio
 from typing import Optional, List
 
@@ -114,6 +117,11 @@ async def publish_order_event(order_id: int, user_id: int, book_id: int, quantit
 
 
 app = FastAPI(title="Order Service")
+
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
+FastAPIInstrumentor.instrument_app(app)
+SQLAlchemyInstrumentor().instrument(engine=engine)
 
 app.add_middleware(
     CORSMiddleware,

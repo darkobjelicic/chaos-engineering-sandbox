@@ -1,6 +1,9 @@
 import os
 import asyncio
 import json
+from telemetry import setup_telemetry
+
+setup_telemetry()
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -21,6 +24,9 @@ logger.addHandler(handler)
 RABBITMQ_URL = os.getenv("RABBITMQ_URL", "amqp://guest:guest@rabbitmq:5672/")
 
 app = FastAPI(title="Notification Service")
+
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+FastAPIInstrumentor.instrument_app(app)
 
 app.add_middleware(
     CORSMiddleware,

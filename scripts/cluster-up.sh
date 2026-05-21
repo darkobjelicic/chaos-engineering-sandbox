@@ -50,6 +50,7 @@ kubectl create namespace monitoring --dry-run=client -o yaml | kubectl apply -f 
 
 helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
 helm repo add grafana https://grafana.github.io/helm-charts
+helm repo add open-telemetry https://open-telemetry.github.io/opentelemetry-helm-charts
 helm repo update
 
 helm upgrade --install kube-prometheus-stack prometheus-community/kube-prometheus-stack \
@@ -71,6 +72,11 @@ helm upgrade --install promtail grafana/promtail \
   --namespace monitoring \
   --values deploy/helm/promtail/values-kind.yaml \
   --wait --timeout 2m
+
+helm upgrade --install otelcol open-telemetry/opentelemetry-collector \
+  --namespace monitoring \
+  --values deploy/helm/otel-collector/values-kind.yaml \
+  --wait --timeout 3m
 
 # ── 6. bookstore namespace + ArgoCD app ──────────────────────────────────────
 log "Creating bookstore namespace..."

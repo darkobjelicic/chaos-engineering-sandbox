@@ -1,5 +1,8 @@
 import os
 import time
+from telemetry import setup_telemetry
+
+setup_telemetry()
 from typing import Optional, List
 
 from fastapi import FastAPI, HTTPException, Depends
@@ -47,6 +50,11 @@ class BookUpdate(SQLModel):
 
 
 app = FastAPI(title="Book Service")
+
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
+FastAPIInstrumentor.instrument_app(app)
+SQLAlchemyInstrumentor().instrument(engine=engine)
 
 app.add_middleware(
     CORSMiddleware,

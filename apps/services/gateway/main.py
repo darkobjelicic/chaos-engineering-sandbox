@@ -1,6 +1,9 @@
 import os
 import httpx
 import logging
+from telemetry import setup_telemetry
+
+setup_telemetry()
 from pythonjsonlogger import jsonlogger
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
@@ -22,6 +25,11 @@ INVENTORY_SERVICE_URL = os.getenv(
 )
 
 app = FastAPI(title="API Gateway")
+
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
+FastAPIInstrumentor.instrument_app(app)
+HTTPXClientInstrumentor().instrument()
 
 app.add_middleware(
     CORSMiddleware,

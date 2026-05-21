@@ -1,6 +1,9 @@
 import os
 import time
 import asyncio
+from telemetry import setup_telemetry
+
+setup_telemetry()
 import json
 from typing import Optional, List
 
@@ -40,6 +43,11 @@ class Inventory(SQLModel, table=True):
 
 
 app = FastAPI(title="Inventory Service")
+
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
+FastAPIInstrumentor.instrument_app(app)
+SQLAlchemyInstrumentor().instrument(engine=engine)
 
 app.add_middleware(
     CORSMiddleware,

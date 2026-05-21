@@ -17,6 +17,19 @@ spec:
           image: darko999/api-gateway
           ports:
             - containerPort: 8000
+          env:
+            - name: OTEL_SERVICE_NAME
+              value: api-gateway
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              valueFrom:
+                configMapKeyRef:
+                  name: otel-config
+                  key: endpoint
+            - name: OTEL_EXPORTER_OTLP_PROTOCOL
+              valueFrom:
+                configMapKeyRef:
+                  name: otel-config
+                  key: protocol
           readinessProbe:
             httpGet:
               path: /health
