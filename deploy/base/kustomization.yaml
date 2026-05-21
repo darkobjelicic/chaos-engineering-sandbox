@@ -5,6 +5,7 @@ namespace: bookstore
 
 resources:
   - namespace.yaml
+  - otel-configmap.yaml
   - rabbitmq/deployment.yaml
   - rabbitmq/service.yaml
   - postgres/auth-statefulset.yaml

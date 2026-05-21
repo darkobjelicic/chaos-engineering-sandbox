@@ -28,6 +28,18 @@ spec:
                 secretKeyRef:
                   name: inventory-service-secret
                   key: rabbitmq-url
+            - name: OTEL_SERVICE_NAME
+              value: inventory-service
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              valueFrom:
+                configMapKeyRef:
+                  name: otel-config
+                  key: endpoint
+            - name: OTEL_EXPORTER_OTLP_PROTOCOL
+              valueFrom:
+                configMapKeyRef:
+                  name: otel-config
+                  key: protocol
           readinessProbe:
             httpGet:
               path: /health

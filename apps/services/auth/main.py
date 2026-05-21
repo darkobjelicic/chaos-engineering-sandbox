@@ -1,5 +1,8 @@
 import os
 from typing import Optional
+from telemetry import setup_telemetry
+
+setup_telemetry()
 
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
@@ -51,6 +54,12 @@ class Token(BaseModel):
 
 
 app = FastAPI(title="Auth Service")
+
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
+
+FastAPIInstrumentor.instrument_app(app)
+SQLAlchemyInstrumentor().instrument(engine=engine)
 
 app.add_middleware(
     CORSMiddleware,

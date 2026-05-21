@@ -17,6 +17,9 @@ prometheus:
         memory: 512Mi
     # Scrape bookstore namespace in addition to monitoring
     additionalScrapeConfigs:
+      - job_name: otel-collector
+        static_configs:
+          - targets: ['otelcol-opentelemetry-collector.monitoring.svc.cluster.local:8889']
       - job_name: bookstore-services
         kubernetes_sd_configs:
           - role: pod
