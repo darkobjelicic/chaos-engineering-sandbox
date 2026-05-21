@@ -1,0 +1,42 @@
+loki:
+  commonConfig:
+    replication_factor: 1
+  storage:
+    type: filesystem # Replace with s3/gcs for true production
+  auth_enabled: false
+  schemaConfig:
+    configs:
+      - from: "2024-01-01"
+        store: tsdb
+        object_store: filesystem
+        schema: v13
+        index:
+          prefix: loki_index_
+          period: 24h
+
+deploymentMode: SingleBinary
+
+singleBinary:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 200m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+  persistence:
+    size: 20Gi
+
+promtail:
+  enabled: true
+  config:
+    clients:
+      - url: http://loki.monitoring.svc.cluster.local:3100/loki/api/v1/push
+
+backend:
+  replicas: 0
+read:
+  replicas: 0
+write:
+  replicas: 0

@@ -118,6 +118,23 @@ make dev-down
 
 ---
 
+## Linux: inotify Limits (required for Promtail)
+
+Promtail watches container log files using inotify. The Linux default limits are too low for a kind cluster. Run once before `cluster-up.sh`:
+
+```bash
+sudo sysctl fs.inotify.max_user_instances=512
+sudo sysctl fs.inotify.max_user_watches=524288
+```
+
+To make it permanent across reboots:
+```bash
+echo "fs.inotify.max_user_instances=512" | sudo tee -a /etc/sysctl.conf
+echo "fs.inotify.max_user_watches=524288" | sudo tee -a /etc/sysctl.conf
+```
+
+---
+
 ## Full Local Stack (Kubernetes + GitOps)
 
 Spin up the complete stack with a single command:
