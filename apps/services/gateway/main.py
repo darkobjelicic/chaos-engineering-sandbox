@@ -28,6 +28,7 @@ app = FastAPI(title="API Gateway")
 
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
+
 FastAPIInstrumentor.instrument_app(app)
 HTTPXClientInstrumentor().instrument()
 

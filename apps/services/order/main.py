@@ -120,6 +120,7 @@ app = FastAPI(title="Order Service")
 
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
+
 FastAPIInstrumentor.instrument_app(app)
 SQLAlchemyInstrumentor().instrument(engine=engine)
 
