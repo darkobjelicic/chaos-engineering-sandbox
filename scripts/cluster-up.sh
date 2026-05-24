@@ -79,8 +79,9 @@ helm upgrade --install otelcol open-telemetry/opentelemetry-collector \
   --wait --timeout 3m
 
 # ── 6. Monitoring extras (ServiceMonitors + Grafana dashboards) ──────────────
-log "Applying ServiceMonitors..."
+log "Applying monitoring extras (ServiceMonitors, Ingress)..."
 kubectl apply -f deploy/monitoring/otel-collector-servicemonitor.yaml
+kubectl apply -f deploy/monitoring/grafana-ingress.yaml
 
 log "Applying Grafana dashboards..."
 kubectl apply -k deploy/grafana-dashboards
@@ -100,8 +101,7 @@ log "✓ Cluster ready!"
 log ""
 log "ArgoCD UI:      kubectl port-forward svc/argocd-server -n argocd 8080:443"
 log "ArgoCD pass:    kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d"
-log "Grafana UI:     kubectl port-forward svc/kube-prometheus-stack-grafana -n monitoring 3001:80"
-log "Grafana pass:   admin / admin"
+log "Grafana UI:     http://grafana.monitoring.local (admin / admin)"
 log ""
 log "Add to /etc/hosts:"
-log "  127.0.0.1  bookstore.local api.bookstore.local"
+log "  127.0.0.1  bookstore.local api.bookstore.local grafana.monitoring.local"
