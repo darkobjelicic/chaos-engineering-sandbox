@@ -2,16 +2,18 @@ tempo:
   resources:
     requests:
       cpu: 50m
-      memory: 128Mi
+      memory: 256Mi
     limits:
       cpu: 200m
-      memory: 256Mi
+      memory: 512Mi
 
 storage:
   trace:
     backend: local
     local:
       path: /var/tempo/traces
+
+retention: 24h
 
 persistence:
   enabled: true

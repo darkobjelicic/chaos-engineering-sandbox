@@ -21,15 +21,14 @@ grafana:
   service:
     type: ClusterIP
   persistence:
-    enabled: true
-    size: 1Gi
+    enabled: false
   resources:
     requests:
       cpu: 50m
-      memory: 128Mi
+      memory: 256Mi
     limits:
       cpu: 200m
-      memory: 256Mi
+      memory: 512Mi
   # Pre-configure Loki and Tempo as datasources
   additionalDataSources:
     - name: Loki

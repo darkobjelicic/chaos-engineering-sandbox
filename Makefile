@@ -3,7 +3,12 @@
 # ─── Variables ────────────────────────────────────────────────────────────────
 CLUSTER_NAME  := chaos-sandbox
 KIND_CONFIG   := scripts/kind-config.yaml
-OVERLAY       ?= dev
+OVERLAY       ?= kind
+ENV           ?= kind
+
+BASE_URL_kind := http://api.bookstore.local
+BASE_URL_prod := https://api.devopsgeek.dev
+BASE_URL      ?= $(BASE_URL_$(ENV))
 
 # ─── Help ─────────────────────────────────────────────────────────────────────
 .PHONY: help
@@ -31,7 +36,9 @@ help:
 	@echo ""
 	@echo "  Testing"
 	@echo "  ─────────────────────────────────────────────────"
-	@echo "  make load-test       Run k6 load test"
+	@echo "  make smoke           Run smoke test  (ENV=kind|prod)"
+	@echo "  make load            Run load test   (ENV=kind|prod)"
+	@echo "  make stress          Run stress test (ENV=kind|prod)"
 	@echo "  make chaos-run       Run chaos experiment (EXPERIMENT=<name>)"
 	@echo ""
 	@echo "  Code quality"
@@ -87,9 +94,17 @@ grafana-ui:
 	kubectl port-forward svc/grafana -n monitoring 3001:80
 
 # ─── Testing ──────────────────────────────────────────────────────────────────
-.PHONY: load-test
-load-test:
-	k6 run load-testing/k6/scripts/orders.js
+.PHONY: smoke
+smoke:
+	BASE_URL=$(BASE_URL) bash scripts/run-load-test.sh load-testing/k6/scripts/smoke.js
+
+.PHONY: load
+load:
+	BASE_URL=$(BASE_URL) bash scripts/run-load-test.sh load-testing/k6/scripts/load.js
+
+.PHONY: stress
+stress:
+	BASE_URL=$(BASE_URL) bash scripts/run-load-test.sh load-testing/k6/scripts/stress.js
 
 .PHONY: chaos-run
 chaos-run:
