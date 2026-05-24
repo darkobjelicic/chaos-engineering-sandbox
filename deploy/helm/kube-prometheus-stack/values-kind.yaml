@@ -21,8 +21,7 @@ grafana:
   service:
     type: ClusterIP
   persistence:
-    enabled: true
-    size: 1Gi
+    enabled: false
   resources:
     requests:
       cpu: 50m
