@@ -17,4 +17,5 @@ echo ""
 K6_PROMETHEUS_RW_SERVER_URL=http://localhost:9090/api/v1/write \
   k6 run --out experimental-prometheus-rw \
   --env BASE_URL="${BASE_URL:-http://api.bookstore.local}" \
+  --env VUS="${VUS:-10}" \
   "$SCRIPT"

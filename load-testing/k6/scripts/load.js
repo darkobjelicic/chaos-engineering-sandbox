@@ -6,11 +6,15 @@ import { check, group, sleep } from "k6";
 // 2:00 – 10:00  baseline (8 min) — observe normal behaviour before chaos
 // 10:00 – 25:00 chaos window (15 min) — inject failures here
 // 25:00 – 27:00 ramp down
+//
+// Override VUs: k6 run --env VUS=20 load.js  or  make load VUS=20
+const VUS = parseInt(__ENV.VUS || "10");
+
 export const options = {
   stages: [
-    { duration: "2m", target: 20 },
-    { duration: "8m", target: 20 },
-    { duration: "15m", target: 20 },
+    { duration: "2m", target: VUS },
+    { duration: "8m", target: VUS },
+    { duration: "15m", target: VUS },
     { duration: "2m", target: 0 },
   ],
   thresholds: {
