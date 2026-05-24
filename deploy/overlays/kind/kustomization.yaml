@@ -39,25 +39,25 @@ secretGenerator:
 images:
 - name: darko999/api-gateway
   newName: darko999/api-gateway
-  newTag: 6d7436c
+  newTag: 386bb39
 - name: darko999/auth-service
   newName: darko999/auth-service
-  newTag: 6d7436c
+  newTag: 386bb39
 - name: darko999/book-service
   newName: darko999/book-service
-  newTag: 6d7436c
+  newTag: 386bb39
 - name: darko999/frontend
   newName: darko999/frontend
-  newTag: 6d7436c
+  newTag: 386bb39
 - name: darko999/inventory-service
   newName: darko999/inventory-service
-  newTag: 6d7436c
+  newTag: 386bb39
 - name: darko999/notification-service
   newName: darko999/notification-service
-  newTag: 6d7436c
+  newTag: 386bb39
 - name: darko999/order-service
   newName: darko999/order-service
-  newTag: 6d7436c
+  newTag: 386bb39
 
 
 
