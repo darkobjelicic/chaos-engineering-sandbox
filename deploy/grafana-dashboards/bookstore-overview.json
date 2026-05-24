@@ -1,0 +1,25 @@
+{
+  "title": "Bookstore Overview",
+  "uid": "bookstore-overview",
+  "schemaVersion": 38,
+  "version": 1,
+  "refresh": "10s",
+  "time": { "from": "now-1h", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "title": "HTTP Request Rate (req/s)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "rate(http_server_duration_milliseconds_count{job!=\"\"}[5m])",
+          "legendFormat": "{{job}} {{http_target}}",
+          "refId": "A"
+        }
+      ]
+    }
+  ]
+}

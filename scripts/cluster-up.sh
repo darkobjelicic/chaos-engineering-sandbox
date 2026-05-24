@@ -78,7 +78,14 @@ helm upgrade --install otelcol open-telemetry/opentelemetry-collector \
   --values deploy/helm/otel-collector/values-kind.yaml \
   --wait --timeout 3m
 
-# ── 6. bookstore namespace + ArgoCD app ──────────────────────────────────────
+# ── 6. Monitoring extras (ServiceMonitors + Grafana dashboards) ──────────────
+log "Applying ServiceMonitors..."
+kubectl apply -f deploy/monitoring/otel-collector-servicemonitor.yaml
+
+log "Applying Grafana dashboards..."
+kubectl apply -k deploy/grafana-dashboards
+
+# ── 7. bookstore namespace + ArgoCD app ──────────────────────────────────────
 log "Creating bookstore namespace..."
 kubectl create namespace bookstore --dry-run=client -o yaml | kubectl apply -f -
 
