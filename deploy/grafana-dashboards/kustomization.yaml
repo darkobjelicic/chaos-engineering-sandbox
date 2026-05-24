@@ -12,3 +12,6 @@ configMapGenerator:
   - name: bookstore-overview-dashboard
     files:
       - bookstore-overview.json
+  - name: service-detail-dashboard
+    files:
+      - service-detail.json

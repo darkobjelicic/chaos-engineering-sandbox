@@ -94,8 +94,8 @@
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": { "defaults": { "unit": "short", "custom": { "lineWidth": 2 } } },
       "targets": [{ "datasource": { "type": "prometheus", "uid": "prometheus" },
-        "expr": "sum by (exported_job) (http_server_active_requests{exported_job!=\"\"})",
-        "legendFormat": "{{exported_job}}", "refId": "A" }] },
+        "expr": "sum(http_server_active_requests{exported_job=\"api-gateway\"})",
+        "legendFormat": "api-gateway", "refId": "A" }] },
 
     { "id": 12, "title": "CPU & Memory", "type": "row", "collapsed": false,
       "gridPos": { "h": 1, "w": 24, "x": 0, "y": 22 }, "panels": [] },

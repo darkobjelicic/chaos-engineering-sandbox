@@ -1,0 +1,165 @@
+{
+  "title": "Service Detail",
+  "uid": "service-detail",
+  "schemaVersion": 38,
+  "version": 1,
+  "refresh": "10s",
+  "time": { "from": "now-30m", "to": "now" },
+  "tags": ["bookstore", "chaos"],
+  "templating": {
+    "list": [
+      {
+        "name": "service",
+        "label": "Service",
+        "type": "query",
+        "datasource": { "type": "prometheus", "uid": "prometheus" },
+        "query": "label_values(http_server_duration_milliseconds_count{exported_job!=\"\"}, exported_job)",
+        "refresh": 2,
+        "sort": 1,
+        "includeAll": false,
+        "multi": false,
+        "current": {}
+      }
+    ]
+  },
+  "annotations": {
+    "list": [
+      {
+        "name": "Chaos Events",
+        "datasource": { "type": "grafana", "uid": "-- Grafana --" },
+        "enable": true,
+        "hide": false,
+        "iconColor": "red",
+        "tags": ["chaos"],
+        "type": "dashboard"
+      }
+    ]
+  },
+  "panels": [
+    { "id": 1, "title": "Request Rate", "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "reqps", "thresholds": { "mode": "absolute", "steps": [{"color": "green", "value": null}] } } },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "orientation": "auto", "textMode": "auto", "colorMode": "background" },
+      "targets": [{ "datasource": { "type": "prometheus", "uid": "prometheus" },
+        "expr": "sum(rate(http_server_duration_milliseconds_count{exported_job=\"$service\"}[2m]))",
+        "legendFormat": "RPS", "refId": "A" }] },
+
+    { "id": 2, "title": "p95 Latency", "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "ms", "thresholds": { "mode": "absolute", "steps": [
+        {"color": "green", "value": null}, {"color": "yellow", "value": 500}, {"color": "red", "value": 1000}
+      ] } } },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "orientation": "auto", "textMode": "auto", "colorMode": "background" },
+      "targets": [{ "datasource": { "type": "prometheus", "uid": "prometheus" },
+        "expr": "histogram_quantile(0.95, sum by (le) (rate(http_server_duration_milliseconds_bucket{exported_job=\"$service\"}[2m])))",
+        "legendFormat": "p95", "refId": "A" }] },
+
+    { "id": 3, "title": "Error Rate (5xx)", "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "percentunit", "thresholds": { "mode": "absolute", "steps": [
+        {"color": "green", "value": null}, {"color": "yellow", "value": 0.01}, {"color": "red", "value": 0.05}
+      ] } } },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "orientation": "auto", "textMode": "auto", "colorMode": "background" },
+      "targets": [{ "datasource": { "type": "prometheus", "uid": "prometheus" },
+        "expr": "(sum(rate(http_server_duration_milliseconds_count{exported_job=\"$service\", http_status_code=~\"5..\"}[2m])) or vector(0)) / sum(rate(http_server_duration_milliseconds_count{exported_job=\"$service\"}[2m]))",
+        "legendFormat": "5xx", "refId": "A" }] },
+
+    { "id": 4, "title": "Pod Restarts", "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "short", "thresholds": { "mode": "absolute", "steps": [
+        {"color": "green", "value": null}, {"color": "yellow", "value": 1}, {"color": "red", "value": 3}
+      ] } } },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "orientation": "auto", "textMode": "auto", "colorMode": "background" },
+      "targets": [{ "datasource": { "type": "prometheus", "uid": "prometheus" },
+        "expr": "sum(kube_pod_container_status_restarts_total{namespace=\"bookstore\", container=\"$service\"})",
+        "legendFormat": "Restarts", "refId": "A" }] },
+
+    { "id": 10, "title": "HTTP", "type": "row", "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 4 }, "panels": [] },
+
+    { "id": 5, "title": "Request Rate (req/s)", "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 5 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "reqps", "custom": { "lineWidth": 2 } } },
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "sum by (http_status_code) (rate(http_server_duration_milliseconds_count{exported_job=\"$service\"}[2m]))",
+          "legendFormat": "{{http_status_code}}", "refId": "A" }
+      ] },
+
+    { "id": 6, "title": "Latency Percentiles (ms)", "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 5 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "ms", "custom": { "lineWidth": 2 } } },
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "histogram_quantile(0.50, sum by (le) (rate(http_server_duration_milliseconds_bucket{exported_job=\"$service\"}[2m])))",
+          "legendFormat": "p50", "refId": "A" },
+        { "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(http_server_duration_milliseconds_bucket{exported_job=\"$service\"}[2m])))",
+          "legendFormat": "p95", "refId": "B" },
+        { "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(http_server_duration_milliseconds_bucket{exported_job=\"$service\"}[2m])))",
+          "legendFormat": "p99", "refId": "C" }
+      ] },
+
+    { "id": 11, "title": "Pods & Resources", "type": "row", "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 13 }, "panels": [] },
+
+    { "id": 7, "title": "Pod Count", "type": "timeseries",
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 14 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "short", "custom": { "lineWidth": 2 },
+        "thresholds": { "mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "green", "value": 1}] } } },
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "sum(kube_pod_status_ready{namespace=\"bookstore\", condition=\"true\", pod=~\"$service.*\"})",
+          "legendFormat": "Ready", "refId": "A" },
+        { "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "sum(kube_pod_info{namespace=\"bookstore\", pod=~\"$service.*\"})",
+          "legendFormat": "Total", "refId": "B" }
+      ] },
+
+    { "id": 8, "title": "CPU Usage", "type": "timeseries",
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 14 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "cores", "custom": { "lineWidth": 2 } } },
+      "targets": [{ "datasource": { "type": "prometheus", "uid": "prometheus" },
+        "expr": "sum by (pod) (rate(container_cpu_usage_seconds_total{namespace=\"bookstore\", container=\"$service\"}[2m]))",
+        "legendFormat": "{{pod}}", "refId": "A" }] },
+
+    { "id": 9, "title": "Memory Usage", "type": "timeseries",
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 14 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "bytes", "custom": { "lineWidth": 2 } } },
+      "targets": [{ "datasource": { "type": "prometheus", "uid": "prometheus" },
+        "expr": "sum by (pod) (container_memory_working_set_bytes{namespace=\"bookstore\", container=\"$service\"})",
+        "legendFormat": "{{pod}}", "refId": "A" }] },
+
+    { "id": 12, "title": "Database", "type": "row", "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 22 }, "panels": [] },
+
+    { "id": 13, "title": "DB Connections", "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 23 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "short", "custom": { "lineWidth": 2 } } },
+      "targets": [{ "datasource": { "type": "prometheus", "uid": "prometheus" },
+        "expr": "sum by (state) (db_client_connections_usage{exported_job=\"$service\"})",
+        "legendFormat": "{{state}}", "refId": "A" }] },
+
+    { "id": 14, "title": "DB Connection Pool Utilization", "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 23 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "percentunit", "custom": { "lineWidth": 2 },
+        "thresholds": { "mode": "absolute", "steps": [
+          {"color": "green", "value": null}, {"color": "yellow", "value": 0.7}, {"color": "red", "value": 0.9}
+        ] } } },
+      "targets": [{ "datasource": { "type": "prometheus", "uid": "prometheus" },
+        "expr": "sum(db_client_connections_usage{exported_job=\"$service\", state=\"used\"}) / (sum(db_client_connections_usage{exported_job=\"$service\", state=\"used\"}) + sum(db_client_connections_usage{exported_job=\"$service\", state=\"idle\"}))",
+        "legendFormat": "utilization", "refId": "A" }] }
+  ]
+}
