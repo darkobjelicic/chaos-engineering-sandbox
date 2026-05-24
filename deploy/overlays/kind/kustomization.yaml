@@ -4,61 +4,68 @@ kind: Kustomization
 namespace: bookstore
 
 resources:
-- ../../base
+  - ../../base
 
 generatorOptions:
   disableNameSuffixHash: true
 
 secretGenerator:
-- literals:
-  - password=postgres
-  name: postgres-secret
-- literals:
-  - username=guest
-  - password=guest
-  name: rabbitmq-secret
-- literals:
-  - database-url=postgresql://postgres:postgres@postgres-auth:5432/auth_db
-  - secret-key=devsecretkey1234567890
-  name: auth-service-secret
-- literals:
-  - database-url=postgresql://postgres:postgres@postgres-book:5432/book_db
-  name: book-service-secret
-- literals:
-  - database-url=postgresql://postgres:postgres@postgres-inventory:5432/inventory_db
-  - rabbitmq-url=amqp://guest:guest@rabbitmq:5672/
-  name: inventory-service-secret
-- literals:
-  - database-url=postgresql://postgres:postgres@postgres-order:5432/order_db
-  - rabbitmq-url=amqp://guest:guest@rabbitmq:5672/
-  name: order-service-secret
-- literals:
-  - rabbitmq-url=amqp://guest:guest@rabbitmq:5672/
-  name: notification-service-secret
+  - name: postgres-secret
+    literals:
+      - password=postgres
+  - name: rabbitmq-secret
+    literals:
+      - username=guest
+      - password=guest
+  - name: auth-service-secret
+    literals:
+      - database-url=postgresql://postgres:postgres@postgres-auth:5432/auth_db
+      - secret-key=devsecretkey1234567890
+  - name: book-service-secret
+    literals:
+      - database-url=postgresql://postgres:postgres@postgres-book:5432/book_db
+  - name: inventory-service-secret
+    literals:
+      - database-url=postgresql://postgres:postgres@postgres-inventory:5432/inventory_db
+      - rabbitmq-url=amqp://guest:guest@rabbitmq:5672/
+  - name: order-service-secret
+    literals:
+      - database-url=postgresql://postgres:postgres@postgres-order:5432/order_db
+      - rabbitmq-url=amqp://guest:guest@rabbitmq:5672/
+  - name: notification-service-secret
+    literals:
+      - rabbitmq-url=amqp://guest:guest@rabbitmq:5672/
 
 images:
-- name: darko999/api-gateway
-  newName: darko999/api-gateway
-  newTag: 17ac6b5
-- name: darko999/auth-service
-  newName: darko999/auth-service
-  newTag: 17ac6b5
-- name: darko999/book-service
-  newName: darko999/book-service
-  newTag: 17ac6b5
-- name: darko999/frontend
-  newName: darko999/frontend
-  newTag: 17ac6b5
-- name: darko999/inventory-service
-  newName: darko999/inventory-service
-  newTag: 17ac6b5
-- name: darko999/notification-service
-  newName: darko999/notification-service
-  newTag: 17ac6b5
-- name: darko999/order-service
-  newName: darko999/order-service
-  newTag: 17ac6b5
+  - name: darko999/auth-service
+    newTag: 17ac6b5
+  - name: darko999/book-service
+    newTag: 17ac6b5
+  - name: darko999/api-gateway
+    newTag: 17ac6b5
+  - name: darko999/inventory-service
+    newTag: 17ac6b5
+  - name: darko999/notification-service
+    newTag: 17ac6b5
+  - name: darko999/order-service
+    newTag: 17ac6b5
+  - name: darko999/frontend
+    newTag: 17ac6b5
 
+patches:
+  - patch: |-
+      - op: add
+        path: /spec/template/spec/containers/0/resources
+        value:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            cpu: 200m
+            memory: 128Mi
+    target:
+      kind: Deployment
+      name: "auth-service|book-service|inventory-service|order-service|notification-service|api-gateway|frontend"
 
   - patch: |-
       - op: add
