@@ -9,6 +9,8 @@ ENV           ?= kind
 BASE_URL_kind := http://api.bookstore.local
 BASE_URL_prod := https://api.devopsgeek.dev
 BASE_URL      ?= $(BASE_URL_$(ENV))
+VUS           ?= 10
+DURATION      ?= 25m
 
 # ─── Help ─────────────────────────────────────────────────────────────────────
 .PHONY: help
@@ -96,15 +98,15 @@ grafana-ui:
 # ─── Testing ──────────────────────────────────────────────────────────────────
 .PHONY: smoke
 smoke:
-	BASE_URL=$(BASE_URL) bash scripts/run-load-test.sh load-testing/k6/scripts/smoke.js
+	BASE_URL=$(BASE_URL) VUS=$(VUS) bash scripts/run-load-test.sh load-testing/k6/scripts/smoke.js
 
 .PHONY: load
 load:
-	BASE_URL=$(BASE_URL) bash scripts/run-load-test.sh load-testing/k6/scripts/load.js
+	BASE_URL=$(BASE_URL) VUS=$(VUS) DURATION=$(DURATION) bash scripts/run-load-test.sh load-testing/k6/scripts/load.js
 
 .PHONY: stress
 stress:
-	BASE_URL=$(BASE_URL) bash scripts/run-load-test.sh load-testing/k6/scripts/stress.js
+	BASE_URL=$(BASE_URL) VUS=$(VUS) DURATION=$(DURATION) bash scripts/run-load-test.sh load-testing/k6/scripts/stress.js
 
 .PHONY: chaos-run
 chaos-run:

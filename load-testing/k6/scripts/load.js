@@ -1,17 +1,15 @@
 import http from "k6/http";
 import { check, group, sleep } from "k6";
 
-// ── Stages ────────────────────────────────────────────────────────────────────
-// 0:00 – 2:00   ramp up to steady state
-// 2:00 – 10:00  baseline (8 min) — observe normal behaviour before chaos
-// 10:00 – 25:00 chaos window (15 min) — inject failures here
-// 25:00 – 27:00 ramp down
+// Override: make load VUS=20 DURATION=30m
+const VUS      = parseInt(__ENV.VUS      || "10");
+const DURATION = __ENV.DURATION          || "25m";
+
 export const options = {
   stages: [
-    { duration: "2m", target: 20 },
-    { duration: "8m", target: 20 },
-    { duration: "15m", target: 20 },
-    { duration: "2m", target: 0 },
+    { duration: "2m",     target: VUS },
+    { duration: DURATION, target: VUS },
+    { duration: "2m",     target: 0 },
   ],
   thresholds: {
     http_req_failed: ["rate<0.05"],
