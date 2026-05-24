@@ -13,7 +13,7 @@
       "fieldConfig": { "defaults": { "unit": "reqps", "thresholds": { "mode": "absolute", "steps": [{"color": "green", "value": null}] } } },
       "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "orientation": "auto", "textMode": "auto", "colorMode": "background" },
       "targets": [{ "datasource": { "type": "prometheus", "uid": "prometheus" },
-        "expr": "sum(rate(http_server_duration_milliseconds_count{job!=\"\"}[2m]))",
+        "expr": "sum(rate(http_server_duration_milliseconds_count{exported_job!=\"\"}[2m]))",
         "legendFormat": "RPS", "refId": "A" }] },
 
     { "id": 2, "title": "p95 Latency", "type": "stat",
@@ -24,7 +24,7 @@
       ] } } },
       "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "orientation": "auto", "textMode": "auto", "colorMode": "background" },
       "targets": [{ "datasource": { "type": "prometheus", "uid": "prometheus" },
-        "expr": "histogram_quantile(0.95, sum(rate(http_server_duration_milliseconds_bucket{job!=\"\"}[2m])) by (le))",
+        "expr": "histogram_quantile(0.95, sum(rate(http_server_duration_milliseconds_bucket{exported_job!=\"\"}[2m])) by (le))",
         "legendFormat": "p95", "refId": "A" }] },
 
     { "id": 3, "title": "Error Rate", "type": "stat",
@@ -35,7 +35,7 @@
       ] } } },
       "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "orientation": "auto", "textMode": "auto", "colorMode": "background" },
       "targets": [{ "datasource": { "type": "prometheus", "uid": "prometheus" },
-        "expr": "(sum(rate(http_server_duration_milliseconds_count{http_status_code=~\"5..\"}[2m])) or vector(0)) / sum(rate(http_server_duration_milliseconds_count{job!=\"\"}[2m]))",
+        "expr": "(sum(rate(http_server_duration_milliseconds_count{http_status_code=~\"5..\"}[2m])) or vector(0)) / sum(rate(http_server_duration_milliseconds_count{exported_job!=\"\"}[2m]))",
         "legendFormat": "Errors", "refId": "A" }] },
 
     { "id": 4, "title": "Running Pods", "type": "stat",
@@ -57,16 +57,16 @@
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": { "defaults": { "unit": "reqps", "custom": { "lineWidth": 2 } } },
       "targets": [{ "datasource": { "type": "prometheus", "uid": "prometheus" },
-        "expr": "rate(http_server_duration_milliseconds_count{job!=\"\"}[2m])",
-        "legendFormat": "{{job}}", "refId": "A" }] },
+        "expr": "sum by (exported_job) (rate(http_server_duration_milliseconds_count{exported_job!=\"\"}[2m]))",
+        "legendFormat": "{{exported_job}}", "refId": "A" }] },
 
     { "id": 6, "title": "p95 Latency by Service (ms)", "type": "timeseries",
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 5 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": { "defaults": { "unit": "ms", "custom": { "lineWidth": 2 } } },
       "targets": [{ "datasource": { "type": "prometheus", "uid": "prometheus" },
-        "expr": "histogram_quantile(0.95, sum(rate(http_server_duration_milliseconds_bucket{job!=\"\"}[2m])) by (le, job))",
-        "legendFormat": "{{job}}", "refId": "A" }] },
+        "expr": "histogram_quantile(0.95, sum by (le, exported_job) (rate(http_server_duration_milliseconds_bucket{exported_job!=\"\"}[2m])))",
+        "legendFormat": "{{exported_job}}", "refId": "A" }] },
 
     { "id": 11, "title": "Errors & Health", "type": "row", "collapsed": false,
       "gridPos": { "h": 1, "w": 24, "x": 0, "y": 13 }, "panels": [] },
@@ -77,8 +77,8 @@
       "fieldConfig": { "defaults": { "unit": "percentunit", "custom": { "lineWidth": 2 },
         "thresholds": { "mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "red", "value": 0.01}] } } },
       "targets": [{ "datasource": { "type": "prometheus", "uid": "prometheus" },
-        "expr": "rate(http_server_duration_milliseconds_count{http_status_code=~\"5..\"}[2m]) / rate(http_server_duration_milliseconds_count{job!=\"\"}[2m])",
-        "legendFormat": "{{job}}", "refId": "A" }] },
+        "expr": "sum by (exported_job) (rate(http_server_duration_milliseconds_count{http_status_code=~\"5..\"}[2m])) / sum by (exported_job) (rate(http_server_duration_milliseconds_count{exported_job!=\"\"}[2m]))",
+        "legendFormat": "{{exported_job}}", "refId": "A" }] },
 
     { "id": 17, "title": "Error Rate by Service (4xx)", "type": "timeseries",
       "gridPos": { "h": 8, "w": 8, "x": 8, "y": 14 },
@@ -86,16 +86,16 @@
       "fieldConfig": { "defaults": { "unit": "percentunit", "custom": { "lineWidth": 2 },
         "thresholds": { "mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 0.05}] } } },
       "targets": [{ "datasource": { "type": "prometheus", "uid": "prometheus" },
-        "expr": "rate(http_server_duration_milliseconds_count{http_status_code=~\"4..\"}[2m]) / rate(http_server_duration_milliseconds_count{job!=\"\"}[2m])",
-        "legendFormat": "{{job}}", "refId": "A" }] },
+        "expr": "sum by (exported_job) (rate(http_server_duration_milliseconds_count{http_status_code=~\"4..\"}[2m])) / sum by (exported_job) (rate(http_server_duration_milliseconds_count{exported_job!=\"\"}[2m]))",
+        "legendFormat": "{{exported_job}}", "refId": "A" }] },
 
     { "id": 8, "title": "Active HTTP Requests", "type": "timeseries",
       "gridPos": { "h": 8, "w": 8, "x": 16, "y": 14 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": { "defaults": { "unit": "short", "custom": { "lineWidth": 2 } } },
       "targets": [{ "datasource": { "type": "prometheus", "uid": "prometheus" },
-        "expr": "http_server_active_requests{job!=\"\"}",
-        "legendFormat": "{{job}}", "refId": "A" }] },
+        "expr": "sum by (exported_job) (http_server_active_requests{exported_job!=\"\"})",
+        "legendFormat": "{{exported_job}}", "refId": "A" }] },
 
     { "id": 12, "title": "CPU & Memory", "type": "row", "collapsed": false,
       "gridPos": { "h": 1, "w": 24, "x": 0, "y": 22 }, "panels": [] },
@@ -124,8 +124,8 @@
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": { "defaults": { "unit": "short", "custom": { "lineWidth": 2 } } },
       "targets": [{ "datasource": { "type": "prometheus", "uid": "prometheus" },
-        "expr": "db_client_connections_usage{job!=\"\"}",
-        "legendFormat": "{{job}} ({{state}})", "refId": "A" }] },
+        "expr": "sum by (exported_job, state) (db_client_connections_usage{exported_job!=\"\"})",
+        "legendFormat": "{{exported_job}} ({{state}})", "refId": "A" }] },
 
     { "id": 16, "title": "Disk I/O", "type": "timeseries",
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 32 },
@@ -149,7 +149,7 @@
       "fieldConfig": { "defaults": { "unit": "short", "custom": { "lineWidth": 2 },
         "thresholds": { "mode": "absolute", "steps": [{"color": "blue", "value": null}] } } },
       "targets": [{ "datasource": { "type": "prometheus", "uid": "prometheus" },
-        "expr": "k6_vus",
+        "expr": "sum(k6_vus)",
         "legendFormat": "VUs", "refId": "A" }] },
 
     { "id": 20, "title": "k6 Request Rate (req/s)", "type": "timeseries",
@@ -157,8 +157,8 @@
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": { "defaults": { "unit": "reqps", "custom": { "lineWidth": 2 } } },
       "targets": [{ "datasource": { "type": "prometheus", "uid": "prometheus" },
-        "expr": "rate(k6_http_reqs_total[1m])",
-        "legendFormat": "req/s", "refId": "A" }] },
+        "expr": "sum by (group) (rate(k6_http_reqs_total[1m]))",
+        "legendFormat": "{{group}}", "refId": "A" }] },
 
     { "id": 21, "title": "k6 p99 Latency (ms)", "type": "timeseries",
       "gridPos": { "h": 8, "w": 6, "x": 12, "y": 41 },
@@ -168,8 +168,8 @@
           {"color": "green", "value": null}, {"color": "yellow", "value": 500}, {"color": "red", "value": 1000}
         ] } } },
       "targets": [{ "datasource": { "type": "prometheus", "uid": "prometheus" },
-        "expr": "k6_http_req_duration_p99",
-        "legendFormat": "p99", "refId": "A" }] },
+        "expr": "max by (group) (k6_http_req_duration_p99)",
+        "legendFormat": "{{group}}", "refId": "A" }] },
 
     { "id": 22, "title": "k6 Failed Requests (req/s)", "type": "timeseries",
       "gridPos": { "h": 8, "w": 6, "x": 18, "y": 41 },
@@ -179,7 +179,7 @@
           {"color": "green", "value": null}, {"color": "yellow", "value": 0.1}, {"color": "red", "value": 1}
         ] } } },
       "targets": [{ "datasource": { "type": "prometheus", "uid": "prometheus" },
-        "expr": "k6_http_req_failed_rate",
+        "expr": "sum(k6_http_req_failed_rate)",
         "legendFormat": "failed req/s", "refId": "A" }] }
   ]
 }
