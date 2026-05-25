@@ -6,6 +6,19 @@
   "refresh": "10s",
   "time": { "from": "now-30m", "to": "now" },
   "tags": ["bookstore", "chaos"],
+  "annotations": {
+    "list": [
+      {
+        "name": "Chaos Events",
+        "datasource": { "type": "grafana", "uid": "-- Grafana --" },
+        "enable": true,
+        "hide": false,
+        "iconColor": "red",
+        "tags": ["chaos"],
+        "type": "tags"
+      }
+    ]
+  },
   "panels": [
     { "id": 1, "title": "Request Rate", "type": "stat",
       "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },

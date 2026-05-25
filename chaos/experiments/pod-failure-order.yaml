@@ -1,0 +1,14 @@
+apiVersion: chaos-mesh.org/v1alpha1
+kind: PodChaos
+metadata:
+  name: pod-failure-order
+  namespace: bookstore
+spec:
+  action: pod-failure
+  mode: one
+  selector:
+    namespaces:
+      - bookstore
+    labelSelectors:
+      app: order-service
+  duration: 2m

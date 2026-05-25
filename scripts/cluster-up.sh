@@ -86,7 +86,19 @@ kubectl apply -f deploy/monitoring/grafana-ingress.yaml
 log "Applying Grafana dashboards..."
 kubectl apply -k deploy/grafana-dashboards
 
-# ── 7. bookstore namespace + ArgoCD app ──────────────────────────────────────
+# ── 7. Chaos Mesh ────────────────────────────────────────────────────────────
+log "Installing Chaos Mesh..."
+helm repo add chaos-mesh https://charts.chaos-mesh.org
+helm repo update
+kubectl create namespace chaos-mesh --dry-run=client -o yaml | kubectl apply -f -
+helm upgrade --install chaos-mesh chaos-mesh/chaos-mesh \
+  --namespace chaos-mesh \
+  --set chaosDaemon.runtime=containerd \
+  --set chaosDaemon.socketPath=/run/containerd/containerd.sock \
+  --set dashboard.securityMode=false \
+  --wait --timeout 3m
+
+# ── 8. bookstore namespace + ArgoCD app ──────────────────────────────────────
 log "Creating bookstore namespace..."
 kubectl create namespace bookstore --dry-run=client -o yaml | kubectl apply -f -
 
