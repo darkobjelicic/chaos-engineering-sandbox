@@ -1,0 +1,19 @@
+apiVersion: chaos-mesh.org/v1alpha1
+kind: NetworkChaos
+metadata:
+  name: network-latency-bookdb
+  namespace: bookstore
+spec:
+  action: delay
+  mode: all
+  selector:
+    namespaces:
+      - bookstore
+    labelSelectors:
+      app: book-service
+  delay:
+    latency: 300ms
+    jitter: 50ms
+    correlation: "50"
+  direction: to
+  duration: 2m

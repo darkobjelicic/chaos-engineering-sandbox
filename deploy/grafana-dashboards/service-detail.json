@@ -31,7 +31,7 @@
         "hide": false,
         "iconColor": "red",
         "tags": ["chaos"],
-        "type": "dashboard"
+        "type": "tags"
       }
     ]
   },

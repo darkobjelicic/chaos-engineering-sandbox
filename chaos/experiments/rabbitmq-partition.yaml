@@ -1,0 +1,15 @@
+apiVersion: chaos-mesh.org/v1alpha1
+kind: NetworkChaos
+metadata:
+  name: rabbitmq-partition
+  namespace: bookstore
+spec:
+  action: partition
+  mode: all
+  selector:
+    namespaces:
+      - bookstore
+    labelSelectors:
+      app: rabbitmq
+  direction: both
+  duration: 1m

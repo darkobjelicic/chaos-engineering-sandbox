@@ -1,46 +1,104 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
+namespace: bookstore
+
 resources:
   - ../../base
+  - letsencrypt-issuer.yaml
 
-# Prod secrets are managed via Sealed Secrets — see deploy/overlays/prod/sealed-secrets/
+generatorOptions:
+  disableNameSuffixHash: true
+
+secretGenerator:
+  - name: postgres-secret
+    literals:
+      - password=postgres
+  - name: rabbitmq-secret
+    literals:
+      - username=guest
+      - password=guest
+  - name: auth-service-secret
+    literals:
+      - database-url=postgresql://postgres:postgres@postgres-auth:5432/auth_db
+      - secret-key=devsecretkey1234567890
+  - name: book-service-secret
+    literals:
+      - database-url=postgresql://postgres:postgres@postgres-book:5432/book_db
+  - name: inventory-service-secret
+    literals:
+      - database-url=postgresql://postgres:postgres@postgres-inventory:5432/inventory_db
+      - rabbitmq-url=amqp://guest:guest@rabbitmq:5672/
+  - name: order-service-secret
+    literals:
+      - database-url=postgresql://postgres:postgres@postgres-order:5432/order_db
+      - rabbitmq-url=amqp://guest:guest@rabbitmq:5672/
+  - name: notification-service-secret
+    literals:
+      - rabbitmq-url=amqp://guest:guest@rabbitmq:5672/
 
 images:
   - name: darko999/auth-service
-    newTag: latest
+    newTag: 17ac6b5
   - name: darko999/book-service
-    newTag: latest
+    newTag: 17ac6b5
   - name: darko999/api-gateway
-    newTag: latest
+    newTag: 17ac6b5
   - name: darko999/inventory-service
-    newTag: latest
+    newTag: 17ac6b5
   - name: darko999/notification-service
-    newTag: latest
+    newTag: 17ac6b5
   - name: darko999/order-service
-    newTag: latest
+    newTag: 17ac6b5
   - name: darko999/frontend
-    newTag: latest
+    newTag: 17ac6b5
 
 patches:
   - patch: |-
       - op: replace
-        path: /spec/replicas
-        value: 2
+        path: /spec/rules/0/host
+        value: api.devopsgeek.dev
+      - op: add
+        path: /metadata/annotations/cert-manager.io~1cluster-issuer
+        value: letsencrypt-prod
+      - op: add
+        path: /spec/tls
+        value:
+          - hosts:
+              - api.devopsgeek.dev
+            secretName: api-gateway-tls
     target:
-      kind: Deployment
-      name: "api-gateway|frontend|auth-service|book-service|inventory-service|order-service"
+      kind: Ingress
+      name: api-gateway
+
+  - patch: |-
+      - op: replace
+        path: /spec/rules/0/host
+        value: devopsgeek.dev
+      - op: add
+        path: /metadata/annotations
+        value:
+          cert-manager.io/cluster-issuer: letsencrypt-prod
+      - op: add
+        path: /spec/tls
+        value:
+          - hosts:
+              - devopsgeek.dev
+            secretName: frontend-tls
+    target:
+      kind: Ingress
+      name: frontend
 
   - patch: |-
       - op: add
         path: /spec/template/spec/containers/0/resources
         value:
           requests:
-            cpu: 250m
-            memory: 256Mi
+            cpu: 100m
+            memory: 128Mi
           limits:
-            cpu: 1000m
-            memory: 512Mi
+            cpu: 500m
+            memory: 256Mi
     target:
       kind: Deployment
       name: "auth-service|book-service|inventory-service|order-service|notification-service|api-gateway|frontend"
@@ -50,7 +108,7 @@ patches:
         path: /spec/template/spec/containers/0/resources
         value:
           requests:
-            cpu: 500m
+            cpu: 200m
             memory: 512Mi
           limits:
             cpu: 1000m

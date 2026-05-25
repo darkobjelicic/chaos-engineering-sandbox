@@ -1,0 +1,18 @@
+apiVersion: chaos-mesh.org/v1alpha1
+kind: HTTPChaos
+metadata:
+  name: http-400-auth
+  namespace: bookstore
+spec:
+  mode: all
+  selector:
+    namespaces:
+      - bookstore
+    labelSelectors:
+      app: auth-service
+  target: Response
+  port: 8000
+  path: "*"
+  replace:
+    code: 400
+  duration: 2m
