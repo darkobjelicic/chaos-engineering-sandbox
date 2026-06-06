@@ -1,4 +1,5 @@
 import os
+import asyncio
 import httpx
 import logging
 import pybreaker
@@ -22,7 +23,7 @@ AUTH_SERVICE_URL      = os.getenv("AUTH_SERVICE_URL",      "http://auth-service:
 ORDER_SERVICE_URL     = os.getenv("ORDER_SERVICE_URL",     "http://order-service:8000")
 INVENTORY_SERVICE_URL = os.getenv("INVENTORY_SERVICE_URL", "http://inventory-service:8000")
 
-TIMEOUT = 5.0  # seconds — prevents hanging connections under chaos
+TIMEOUT = 5.0
 
 book_breaker      = pybreaker.CircuitBreaker(fail_max=5, reset_timeout=30)
 auth_breaker      = pybreaker.CircuitBreaker(fail_max=5, reset_timeout=30)
@@ -55,6 +56,14 @@ def _service_unavailable(service: str) -> Response:
     )
 
 
+async def _call(breaker, fn):
+    """Run a sync httpx call in a thread pool so the event loop stays free."""
+    try:
+        return await asyncio.to_thread(breaker(fn))
+    except pybreaker.CircuitBreakerError:
+        return None
+
+
 @app.get("/health")
 def health():
     return {"status": "ok", "service": "gateway"}
@@ -65,12 +74,8 @@ def health():
 @app.get("/books")
 async def proxy_list_books():
     logger.info("Proxying GET /books to %s", BOOK_SERVICE_URL)
-    try:
-        @book_breaker
-        def call():
-            return httpx.get(f"{BOOK_SERVICE_URL}/books", timeout=TIMEOUT)
-        r = call()
-    except pybreaker.CircuitBreakerError:
+    r = await _call(book_breaker, lambda: httpx.get(f"{BOOK_SERVICE_URL}/books", timeout=TIMEOUT))
+    if r is None:
         return _service_unavailable("book-service")
     return Response(content=r.content, status_code=r.status_code,
                     media_type=r.headers.get("content-type"))
@@ -79,12 +84,8 @@ async def proxy_list_books():
 @app.get("/books/{book_id}")
 async def proxy_get_book(book_id: int):
     logger.info("Proxying GET /books/%s to %s", book_id, BOOK_SERVICE_URL)
-    try:
-        @book_breaker
-        def call():
-            return httpx.get(f"{BOOK_SERVICE_URL}/books/{book_id}", timeout=TIMEOUT)
-        r = call()
-    except pybreaker.CircuitBreakerError:
+    r = await _call(book_breaker, lambda: httpx.get(f"{BOOK_SERVICE_URL}/books/{book_id}", timeout=TIMEOUT))
+    if r is None:
         return _service_unavailable("book-service")
     return Response(content=r.content, status_code=r.status_code,
                     media_type=r.headers.get("content-type"))
@@ -94,12 +95,8 @@ async def proxy_get_book(book_id: int):
 async def proxy_create_book(request: Request):
     body = await request.json()
     logger.info("Proxying POST /books to %s", BOOK_SERVICE_URL)
-    try:
-        @book_breaker
-        def call():
-            return httpx.post(f"{BOOK_SERVICE_URL}/books", json=body, timeout=TIMEOUT)
-        r = call()
-    except pybreaker.CircuitBreakerError:
+    r = await _call(book_breaker, lambda: httpx.post(f"{BOOK_SERVICE_URL}/books", json=body, timeout=TIMEOUT))
+    if r is None:
         return _service_unavailable("book-service")
     return Response(content=r.content, status_code=r.status_code,
                     media_type=r.headers.get("content-type"))
@@ -111,12 +108,8 @@ async def proxy_create_book(request: Request):
 async def proxy_register(request: Request):
     body = await request.json()
     logger.info("Proxying POST /auth/register to %s", AUTH_SERVICE_URL)
-    try:
-        @auth_breaker
-        def call():
-            return httpx.post(f"{AUTH_SERVICE_URL}/register", json=body, timeout=TIMEOUT)
-        r = call()
-    except pybreaker.CircuitBreakerError:
+    r = await _call(auth_breaker, lambda: httpx.post(f"{AUTH_SERVICE_URL}/register", json=body, timeout=TIMEOUT))
+    if r is None:
         return _service_unavailable("auth-service")
     return Response(content=r.content, status_code=r.status_code,
                     media_type=r.headers.get("content-type"))
@@ -126,12 +119,8 @@ async def proxy_register(request: Request):
 async def proxy_login(request: Request):
     body = await request.form()
     logger.info("Proxying POST /auth/login to %s", AUTH_SERVICE_URL)
-    try:
-        @auth_breaker
-        def call():
-            return httpx.post(f"{AUTH_SERVICE_URL}/login", data=body, timeout=TIMEOUT)
-        r = call()
-    except pybreaker.CircuitBreakerError:
+    r = await _call(auth_breaker, lambda: httpx.post(f"{AUTH_SERVICE_URL}/login", data=dict(body), timeout=TIMEOUT))
+    if r is None:
         return _service_unavailable("auth-service")
     return Response(content=r.content, status_code=r.status_code,
                     media_type=r.headers.get("content-type"))
@@ -143,13 +132,9 @@ async def proxy_me(request: Request):
     if not token:
         return {"error": "Missing token"}, 401
     logger.info("Proxying GET /auth/me to %s", AUTH_SERVICE_URL)
-    try:
-        @auth_breaker
-        def call():
-            return httpx.get(f"{AUTH_SERVICE_URL}/me",
-                             headers={"Authorization": token}, timeout=TIMEOUT)
-        r = call()
-    except pybreaker.CircuitBreakerError:
+    r = await _call(auth_breaker, lambda: httpx.get(f"{AUTH_SERVICE_URL}/me",
+                    headers={"Authorization": token}, timeout=TIMEOUT))
+    if r is None:
         return _service_unavailable("auth-service")
     return Response(content=r.content, status_code=r.status_code,
                     media_type=r.headers.get("content-type"))
@@ -162,13 +147,9 @@ async def proxy_list_orders(request: Request):
     logger.info("Proxying GET /orders to %s", ORDER_SERVICE_URL)
     token = request.headers.get("Authorization")
     headers = {"Authorization": token} if token else {}
-    try:
-        @order_breaker
-        def call():
-            return httpx.get(f"{ORDER_SERVICE_URL}/orders",
-                             headers=headers, timeout=TIMEOUT)
-        r = call()
-    except pybreaker.CircuitBreakerError:
+    r = await _call(order_breaker, lambda: httpx.get(f"{ORDER_SERVICE_URL}/orders",
+                    headers=headers, timeout=TIMEOUT))
+    if r is None:
         return _service_unavailable("order-service")
     return Response(content=r.content, status_code=r.status_code,
                     media_type=r.headers.get("content-type"))
@@ -180,13 +161,9 @@ async def proxy_create_order(request: Request):
     logger.info("Proxying POST /orders to %s", ORDER_SERVICE_URL)
     token = request.headers.get("Authorization")
     headers = {"Authorization": token} if token else {}
-    try:
-        @order_breaker
-        def call():
-            return httpx.post(f"{ORDER_SERVICE_URL}/orders",
-                              json=body, headers=headers, timeout=TIMEOUT)
-        r = call()
-    except pybreaker.CircuitBreakerError:
+    r = await _call(order_breaker, lambda: httpx.post(f"{ORDER_SERVICE_URL}/orders",
+                    json=body, headers=headers, timeout=TIMEOUT))
+    if r is None:
         return _service_unavailable("order-service")
     return Response(content=r.content, status_code=r.status_code,
                     media_type=r.headers.get("content-type"))
@@ -197,12 +174,8 @@ async def proxy_create_order(request: Request):
 @app.get("/inventory")
 async def proxy_list_inventory():
     logger.info("Proxying GET /inventory to %s", INVENTORY_SERVICE_URL)
-    try:
-        @inventory_breaker
-        def call():
-            return httpx.get(f"{INVENTORY_SERVICE_URL}/inventory", timeout=TIMEOUT)
-        r = call()
-    except pybreaker.CircuitBreakerError:
+    r = await _call(inventory_breaker, lambda: httpx.get(f"{INVENTORY_SERVICE_URL}/inventory", timeout=TIMEOUT))
+    if r is None:
         return _service_unavailable("inventory-service")
     return Response(content=r.content, status_code=r.status_code,
                     media_type=r.headers.get("content-type"))
@@ -211,13 +184,9 @@ async def proxy_list_inventory():
 @app.get("/inventory/{book_id}")
 async def proxy_get_inventory(book_id: int):
     logger.info("Proxying GET /inventory/%s to %s", book_id, INVENTORY_SERVICE_URL)
-    try:
-        @inventory_breaker
-        def call():
-            return httpx.get(f"{INVENTORY_SERVICE_URL}/inventory/{book_id}",
-                             timeout=TIMEOUT)
-        r = call()
-    except pybreaker.CircuitBreakerError:
+    r = await _call(inventory_breaker, lambda: httpx.get(f"{INVENTORY_SERVICE_URL}/inventory/{book_id}",
+                    timeout=TIMEOUT))
+    if r is None:
         return _service_unavailable("inventory-service")
     return Response(content=r.content, status_code=r.status_code,
                     media_type=r.headers.get("content-type"))
