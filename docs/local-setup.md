@@ -161,3 +161,79 @@ Tear down:
 ```bash
 make cluster-down
 ```
+
+---
+
+## Running on Your Machine (Two Scenarios)
+
+### Scenario A — Just run it (clone & go)
+
+The repo is fully self-contained and publicly accessible. No extra configuration needed.
+
+```bash
+git clone https://github.com/darkobjelicic/chaos-engineering-sandbox.git
+cd chaos-engineering-sandbox
+
+# Linux only — required for Promtail (see inotify section above)
+sudo sysctl fs.inotify.max_user_instances=512
+sudo sysctl fs.inotify.max_user_watches=524288
+
+make cluster-up
+```
+
+Add to `/etc/hosts`:
+```
+127.0.0.1  bookstore.local api.bookstore.local grafana.monitoring.local
+```
+
+**Why this just works:**
+- All application secrets are plain literals in `kustomization.yaml` (dev credentials — safe for a local sandbox)
+- All Docker images are public on Docker Hub (`darko999/*`)
+- ArgoCD syncs from the public GitHub repo — no auth required
+- Everything else is pulled from public Helm/kubectl registries during `cluster-up`
+
+**Limitation:** You won't be able to push your own code changes and have CI/CD build new images — that requires Docker Hub credentials configured in GitHub Actions.
+
+---
+
+### Scenario B — Fork and own the full pipeline
+
+If you want your own CI/CD pipeline that builds and deploys your changes:
+
+**1. Fork the repo on GitHub**
+
+**2. Update the ArgoCD application to point to your fork:**
+```yaml
+# deploy/argocd/bookstore-app.yaml
+spec:
+  source:
+    repoURL: https://github.com/YOUR-USERNAME/chaos-engineering-sandbox.git
+```
+
+**3. Update image names in the CD workflow:**
+```yaml
+# .github/workflows/cd.yml — replace all occurrences of darko999 with your Docker Hub username
+image: YOUR-DOCKERHUB-USERNAME/api-gateway
+# ... repeat for each service
+```
+
+**4. Update image names in the kustomization overlay:**
+```yaml
+# deploy/overlays/kind/kustomization.yaml — replace darko999 with your Docker Hub username
+images:
+- name: YOUR-DOCKERHUB-USERNAME/api-gateway
+  newName: YOUR-DOCKERHUB-USERNAME/api-gateway
+```
+
+**5. Add GitHub Actions secrets** in your fork's Settings → Secrets → Actions:
+```
+DOCKER_USERNAME   your Docker Hub username
+DOCKER_PASSWORD   your Docker Hub access token
+```
+
+**6. Run the stack:**
+```bash
+make cluster-up
+```
+
+From this point, every push to `main` will automatically build new images, update image tags, and ArgoCD will deploy to your local cluster.
