@@ -23,3 +23,13 @@ CVE-2024-23342
 # Cannot upgrade without replacing python-jose entirely
 # Tracked as future technical debt alongside FastAPI/Pydantic v2 migration
 CVE-2026-30922
+
+# perl-base vulnerabilities in Debian base image
+# Status: fix_deferred / affected - no fix available in debian packages
+# perl-base is a transitive dependency of the Debian base image
+# not used directly by any Python service
+CVE-2026-42496
+CVE-2026-8376
+CVE-2026-42497
+CVE-2026-48962
+CVE-2026-9538
