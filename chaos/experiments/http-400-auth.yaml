@@ -12,7 +12,7 @@ spec:
       app: auth-service
   target: Response
   port: 8000
-  path: "*"
+  path: "/auth*"
   replace:
     code: 400
   duration: 2m

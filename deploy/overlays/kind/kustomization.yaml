@@ -76,6 +76,16 @@ patches:
     kind: Deployment
     name: auth-service|book-service|inventory-service|order-service|notification-service|frontend
 - patch: |-
+    - op: replace
+      path: /spec/template/spec/containers/0/livenessProbe/timeoutSeconds
+      value: 5
+    - op: replace
+      path: /spec/template/spec/containers/0/readinessProbe/timeoutSeconds
+      value: 5
+  target:
+    kind: Deployment
+    name: auth-service|book-service|inventory-service|order-service|notification-service|frontend
+- patch: |-
     - op: add
       path: /spec/template/spec/containers/0/resources
       value:
