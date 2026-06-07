@@ -12,7 +12,7 @@ spec:
       app: order-service
   target: Response
   port: 8000
-  path: "*"
+  path: "/orders*"
   replace:
     code: 500
   duration: 2m
