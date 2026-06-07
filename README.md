@@ -1,19 +1,21 @@
+🇷🇸 Srpski | [🇬🇧 English](README.en.md)
+
 # chaos-engineering-sandbox
 
-A microservices-based bookstore application built as a platform for chaos engineering experiments. Demonstrates a production-grade DevOps setup including GitOps, full-stack observability, load testing, and controlled failure injection via Chaos Mesh.
+Aplikacija knjižare zasnovana na mikroservisima, napravljena kao platforma za chaos engineering eksperimente. Demonstrira production-grade DevOps setup koji uključuje GitOps, full-stack observability, load testing i kontrolisano ubacivanje kvarova putem Chaos Mesh-a.
 
 ![CI](https://github.com/darkobjelicic/chaos-engineering-sandbox/actions/workflows/ci.yml/badge.svg)
 ![CD](https://github.com/darkobjelicic/chaos-engineering-sandbox/actions/workflows/cd.yml/badge.svg)
 
 ---
 
-## Architecture
+## Arhitektura
 
-6 FastAPI microservices communicating via REST and RabbitMQ events, deployed on Kubernetes with a full observability and chaos engineering stack.
+6 FastAPI mikroservisa koji komuniciraju putem REST-a i RabbitMQ event-a, deployovani na Kubernetes-u sa punim observability i chaos engineering stack-om.
 
 ```
 Frontend (React)
-    └── API Gateway  ← circuit breaker per downstream service
+    └── API Gateway  ← circuit breaker po downstream servisu
          ├── Auth Service      → PostgreSQL
          ├── Book Service      → PostgreSQL
          ├── Order Service     → PostgreSQL → RabbitMQ
@@ -26,57 +28,57 @@ Frontend (React)
 
 ## Stack
 
-| Layer | Tools |
+| Sloj | Alati |
 |-------|-------|
-| Application | FastAPI, React |
-| Containers | Docker, Docker Compose |
-| Orchestration | Kubernetes (kind), Helm, Kustomize |
-| GitOps | ArgoCD (automated sync + self-heal) |
+| Aplikacija | FastAPI, React |
+| Kontejneri | Docker, Docker Compose |
+| Orkestracija | Kubernetes (kind), Helm, Kustomize |
+| GitOps | ArgoCD (automatska sinhronizacija + self-heal) |
 | Observability | Prometheus, Grafana, Loki, Tempo, OpenTelemetry |
 | Chaos Engineering | Chaos Mesh |
 | Load Testing | k6 |
 | CI/CD | GitHub Actions |
-| Security | Sealed Secrets, Network Policies |
+| Bezbednost | Sealed Secrets, Network Policies |
 
 ---
 
-## Quick Start
+## Brzi početak
 
-### Prerequisites
+### Preduslovi
 
 - Docker 24+, kubectl, kind, Helm, k6
-- See [docs/local-setup.md](docs/local-setup.md) for install instructions
+- Uputstvo za instalaciju: [docs/local-setup.md](docs/local-setup.md)
 
-### Linux — set inotify limits (required once, for Promtail)
+### Linux — podešavanje inotify limita (jednom, za Promtail)
 
 ```bash
 sudo sysctl fs.inotify.max_user_instances=512
 sudo sysctl fs.inotify.max_user_watches=524288
 ```
 
-### Spin up the full stack
+### Pokretanje celog stack-a
 
 ```bash
-make cluster-up   # ~10-15 min — creates kind cluster, installs everything
+make cluster-up   # ~10-15 min — kreira kind klaster, instalira sve
 ```
 
-Add to `/etc/hosts`:
+Dodati u `/etc/hosts`:
 ```
 127.0.0.1  bookstore.local api.bookstore.local grafana.monitoring.local
 ```
 
-| Dashboard | URL | Credentials |
+| Dashboard | URL | Kredencijali |
 |-----------|-----|-------------|
 | Grafana | http://grafana.monitoring.local | admin / admin |
-| ArgoCD | `make argocd-ui` → localhost:8080 | admin / (see below) |
+| ArgoCD | `make argocd-ui` → localhost:8080 | admin / (videti ispod) |
 
 ```bash
-# ArgoCD password
+# ArgoCD lozinka
 kubectl -n argocd get secret argocd-initial-admin-secret \
   -o jsonpath='{.data.password}' | base64 -d
 ```
 
-### Tear down
+### Gašenje
 
 ```bash
 make cluster-down
@@ -84,52 +86,69 @@ make cluster-down
 
 ---
 
-## Running on Your Machine
+## Pokretanje na sopstvenoj mašini
 
-**Clone and run** — just works, no configuration needed. All images are public on Docker Hub, ArgoCD syncs from this public repo.
+**Clone i pokreni** — radi odmah, bez podešavanja. Sve slike su javne na Docker Hub-u, ArgoCD se sinhronizuje iz ovog javnog repo-a.
 
-**Fork and own the pipeline** — update `repoURL` in `deploy/argocd/bookstore-app.yaml`, image names in `cd.yml` and `kustomization.yaml`, and add `DOCKER_USERNAME` / `DOCKER_PASSWORD` as GitHub Actions secrets.
+**Fork i preuzmi pipeline** — ažurirati `repoURL` u `deploy/argocd/bookstore-app.yaml`, nazive slika u `cd.yml` i `kustomization.yaml`, i dodati `DOCKER_USERNAME` / `DOCKER_PASSWORD` kao GitHub Actions secrets.
 
-Full details in [docs/local-setup.md](docs/local-setup.md#running-on-your-machine-two-scenarios).
+Detaljna uputstva: [docs/local-setup.md](docs/local-setup.md#pokretanje-na-sopstvenoj-masini-dva-scenarija).
 
 ---
 
-## Chaos Experiments
+## Chaos eksperimenti
 
-| Experiment | Target | Key Finding |
+Svaki eksperiment prati metodologiju vođenu hipotezom: definiši steady state → postavi hipotezu → injektuj kvar → posmatraj → zaključi.
+
+### API Gateway Fine Tuning (4 iteracije)
+
+| Iteracija | Promena | Rezultat |
 |---|---|---|
-| Stress test (Before CB) | api-gateway | 6 pod restarts, p95 latency 4-5s @ 50 VUs |
-| Stress test (After CB) | api-gateway | 0 restarts, 0 5xx errors — circuit breaker isolates failures |
-| Network latency | book-service DB | DB connection pool hit 75%, latency propagated to clients |
-| Pod failure | order-service | Kubernetes recovered; failure isolated, other services unaffected |
-| HTTP 500 injection | order-service | 55% 4xx rate, api-gateway destabilized without circuit breaker |
+| Pre circuit breaker-a | — | 6 restarti @ 50 VUs, kaskadni kvar |
+| Posle circuit breaker-a | pybreaker + 5s timeout | 0 restarti, ali skrivena greška u kodu |
+| Otkrivena event loop blokada | sinhroni httpx u async funkcijama | 9 restarti @ 15 VUs (SIGTERM) |
+| asyncio.to_thread + resource fix | thread pool + CPU 500m + probe 5s | 0 restarti, 0 neuspešnih zahteva |
 
-Full experiment report with screenshots: [docs/chaos-experiments-report.md](docs/chaos-experiments-report.md)
+### Chaos eksperimenti
+
+| Eksperiment | Target | Pre | Posle (CB + async) |
+|---|---|---|---|
+| Network latency (300ms DB) | book-service | Pool 75%, degradiran | Stabilan, 0 grešaka, latency propagira |
+| Pod failure | order-service | 3 restarti, ~14 failed req/s | 3 restarti, **~2 failed req/s**, CB apsorbuje |
+| HTTP 500 (path: *) | order-service | 6 GW restarti, 8 OS restarti | 0 GW restarti, 9 OS restarti* |
+| HTTP 500 (path: /orders*) | order-service | — | **0 restarti**, sistem stabilan |
+| CPU stress 80% | inventory-service | — | Latency propagira, 0 grešaka, CB ne okida |
+
+*path: `*` pogađao `/health` endpoint — popravljeno u trećoj iteraciji
+
+Detalji eksperimenata sa snimcima ekrana: [docs/experiments/](docs/experiments/)  
+Arhitekturalne odluke: [docs/adr/](docs/adr/)  
+Operativni runbooks: [docs/runbooks/](docs/runbooks/)
 
 ---
 
-## Makefile Reference
+## Makefile pregled
 
 ```bash
-make cluster-up       # create kind cluster + full stack
-make cluster-down     # delete cluster
-make cluster-status   # show nodes and ArgoCD apps
+make cluster-up       # kreira kind klaster + ceo stack
+make cluster-down     # briše klaster
+make cluster-status   # prikazuje čvorove i ArgoCD aplikacije
 
-make stress           # run stress test (50 VUs, finds breaking point)
-make load             # run load test  (10 VUs, sustained)
-make smoke            # run smoke test (quick sanity check)
+make stress           # stress test (50 VUs, traži tačku loma)
+make load             # load test  (10 VUs, trajno opterećenje)
+make smoke            # smoke test (brza provera ispravnosti)
 
-make chaos-run EXPERIMENT=pod-failure-order   # run a chaos experiment
+make chaos-run EXPERIMENT=pod-failure-order   # pokretanje chaos eksperimenta
 
-make grafana-ui       # port-forward Grafana to localhost:3001
-make argocd-ui        # port-forward ArgoCD to localhost:8080
+make grafana-ui       # port-forward Grafana na localhost:3001
+make argocd-ui        # port-forward ArgoCD na localhost:8080
 ```
 
 ---
 
-## Documentation
+## Dokumentacija
 
-- [Local Setup & Onboarding](docs/local-setup.md)
-- [Chaos Experiment Report](docs/chaos-experiments-report.md)
-- [ADR — Architecture Decision Records](docs/adr/)
+- [Lokalni setup i onboarding](docs/local-setup.md)
+- [ADR — Arhitekturalne odluke](docs/adr/)
 - [Runbooks](docs/runbooks/)
+- [Chaos eksperimenti](docs/experiments/)

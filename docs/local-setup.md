@@ -1,50 +1,52 @@
-# Local Setup
+🇷🇸 Srpski | [🇬🇧 English](local-setup.en.md)
 
-## System Requirements
+# Lokalni setup
 
-| Resource | Minimum |
+## Sistemski zahtevi
+
+| Resurs | Minimum |
 |----------|---------|
-| CPU | 4 cores |
-| RAM | 8 GB (16 GB recommended for full stack) |
-| Disk | 20 GB free |
+| CPU | 4 jezgra |
+| RAM | 8 GB (16 GB preporučeno za ceo stack) |
+| Disk | 20 GB slobodnog prostora |
 | OS | Linux / macOS |
 
 ---
 
-## Required Tools
+## Potrebni alati
 
-### Container & Orchestration
+### Kontejneri i orkestracija
 
-| Tool | Version | Install |
+| Alat | Verzija | Instalacija |
 |------|---------|---------|
 | [Docker](https://docs.docker.com/engine/install/) | 24+ | `apt-get install docker-ce` |
-| [Docker Compose](https://docs.docker.com/compose/install/) | v2.20+ | Included with Docker Desktop |
+| [Docker Compose](https://docs.docker.com/compose/install/) | v2.20+ | Uključen u Docker Desktop |
 | [kubectl](https://kubernetes.io/docs/tasks/tools/) | v1.28+ | `apt-get install kubectl` |
-| [kind](https://kind.sigs.k8s.io/docs/user/quick-start/) | v0.20+ | Binary from GitHub releases |
+| [kind](https://kind.sigs.k8s.io/docs/user/quick-start/) | v0.20+ | Binary sa GitHub releases |
 | [Helm](https://helm.sh/docs/intro/install/) | v3.12+ | `apt-get install helm` |
 
-### GitOps & Secrets
+### GitOps i secrets
 
-| Tool | Version | Install |
+| Alat | Verzija | Instalacija |
 |------|---------|---------|
-| [argocd CLI](https://argo-cd.readthedocs.io/en/stable/cli_installation/) | v2.10+ | Binary from GitHub releases |
-| [kubeseal](https://github.com/bitnami-labs/sealed-secrets#installation) | v0.26+ | Binary from GitHub releases |
+| [argocd CLI](https://argo-cd.readthedocs.io/en/stable/cli_installation/) | v2.10+ | Binary sa GitHub releases |
+| [kubeseal](https://github.com/bitnami-labs/sealed-secrets#installation) | v0.26+ | Binary sa GitHub releases |
 
-### Testing
+### Testiranje
 
-| Tool | Version | Install |
+| Alat | Verzija | Instalacija |
 |------|---------|---------|
-| [k6](https://k6.io/docs/get-started/installation/) | v0.50+ | Binary from GitHub releases |
+| [k6](https://k6.io/docs/get-started/installation/) | v0.50+ | Binary sa GitHub releases |
 
-### Code Quality
+### Kvalitet koda
 
-| Tool | Version | Install |
+| Alat | Verzija | Instalacija |
 |------|---------|---------|
 | [pre-commit](https://pre-commit.com/#installation) | v3.0+ | `pipx install pre-commit` |
 
 ---
 
-## Quick Install (Ubuntu 24.04)
+## Brza instalacija (Ubuntu 24.04)
 
 ### argocd CLI
 ```bash
@@ -77,7 +79,7 @@ pipx ensurepath
 
 ---
 
-## Verify Installation
+## Provera instalacije
 
 ```bash
 docker --version
@@ -93,41 +95,41 @@ pre-commit --version
 
 ---
 
-## Local Development (Docker Compose)
+## Lokalni razvoj (Docker Compose)
 
-Start all services locally without Kubernetes:
+Pokretanje svih servisa lokalno bez Kubernetesa:
 
 ```bash
-cp .env.example .env   # edit values if needed
+cp .env.example .env   # izmeniti vrednosti po potrebi
 make dev-up
 ```
 
-Services available at:
+Servisi dostupni na:
 
-| Service | URL |
+| Servis | URL |
 |---------|-----|
 | Frontend | http://localhost:3000 |
 | API Gateway | http://localhost:8000 |
 | RabbitMQ UI | http://localhost:15672 (guest/guest) |
 | Adminer (DB) | http://localhost:8081 |
 
-Stop:
+Gašenje:
 ```bash
 make dev-down
 ```
 
 ---
 
-## Linux: inotify Limits (required for Promtail)
+## Linux: inotify limiti (potrebno za Promtail)
 
-Promtail watches container log files using inotify. The Linux default limits are too low for a kind cluster. Run once before `cluster-up.sh`:
+Promtail prati log fajlove kontejnera putem inotify-ja. Podrazumevani Linux limiti su premali za kind klaster. Pokrenuti jednom pre `cluster-up.sh`:
 
 ```bash
 sudo sysctl fs.inotify.max_user_instances=512
 sudo sysctl fs.inotify.max_user_watches=524288
 ```
 
-To make it permanent across reboots:
+Za trajno čuvanje kroz reboot:
 ```bash
 echo "fs.inotify.max_user_instances=512" | sudo tee -a /etc/sysctl.conf
 echo "fs.inotify.max_user_watches=524288" | sudo tee -a /etc/sysctl.conf
@@ -135,105 +137,105 @@ echo "fs.inotify.max_user_watches=524288" | sudo tee -a /etc/sysctl.conf
 
 ---
 
-## Full Local Stack (Kubernetes + GitOps)
+## Kompletan lokalni stack (Kubernetes + GitOps)
 
-Spin up the complete stack with a single command:
+Pokretanje celog stack-a jednom komandom:
 
 ```bash
 make cluster-up
 ```
 
-This script will:
-1. Create a kind cluster
-2. Install NGINX Ingress Controller
-3. Install cert-manager
-4. Install ArgoCD
-5. ArgoCD pulls everything else from this repo automatically
+Skripta će:
+1. Kreirati kind klaster
+2. Instalirati NGINX Ingress Controller
+3. Instalirati cert-manager
+4. Instalirati ArgoCD
+5. ArgoCD automatski povlači sve ostalo iz ovog repo-a
 
-Access points after bootstrap:
+Pristupne tačke nakon pokretanja:
 
 ```bash
 make argocd-ui    # ArgoCD dashboard
-make grafana-ui   # Grafana (metrics, logs, traces)
+make grafana-ui   # Grafana (metrike, logovi, tragovi)
 ```
 
-Tear down:
+Gašenje:
 ```bash
 make cluster-down
 ```
 
 ---
 
-## Running on Your Machine (Two Scenarios)
+## Pokretanje na sopstvenoj mašini (dva scenarija)
 
-### Scenario A — Just run it (clone & go)
+### Scenario A — Samo pokreni (clone i kreni)
 
-The repo is fully self-contained and publicly accessible. No extra configuration needed.
+Repo je potpuno autonoman i javno dostupan. Nije potrebna nikakva dodatna konfiguracija.
 
 ```bash
 git clone https://github.com/darkobjelicic/chaos-engineering-sandbox.git
 cd chaos-engineering-sandbox
 
-# Linux only — required for Promtail (see inotify section above)
+# Samo Linux — potrebno za Promtail (videti inotify sekciju iznad)
 sudo sysctl fs.inotify.max_user_instances=512
 sudo sysctl fs.inotify.max_user_watches=524288
 
 make cluster-up
 ```
 
-Add to `/etc/hosts`:
+Dodati u `/etc/hosts`:
 ```
 127.0.0.1  bookstore.local api.bookstore.local grafana.monitoring.local
 ```
 
-**Why this just works:**
-- All application secrets are plain literals in `kustomization.yaml` (dev credentials — safe for a local sandbox)
-- All Docker images are public on Docker Hub (`darko999/*`)
-- ArgoCD syncs from the public GitHub repo — no auth required
-- Everything else is pulled from public Helm/kubectl registries during `cluster-up`
+**Zašto ovo radi odmah:**
+- Svi application secrets su plain literals u `kustomization.yaml` (dev kredencijali — bezbedno za lokalni sandbox)
+- Sve Docker slike su javne na Docker Hub-u (`darko999/*`)
+- ArgoCD se sinhronizuje iz javnog GitHub repo-a — autentifikacija nije potrebna
+- Sve ostalo se povlači iz javnih Helm/kubectl registry-a tokom `cluster-up`
 
-**Limitation:** You won't be able to push your own code changes and have CI/CD build new images — that requires Docker Hub credentials configured in GitHub Actions.
+**Ograničenje:** Neće biti moguće push-ovati sopstvene izmene koda i imati CI/CD koji gradi nove slike — to zahteva Docker Hub kredencijale podešene u GitHub Actions.
 
 ---
 
-### Scenario B — Fork and own the full pipeline
+### Scenario B — Fork i preuzmi ceo pipeline
 
-If you want your own CI/CD pipeline that builds and deploys your changes:
+Ako želiš sopstveni CI/CD pipeline koji gradi i deploy-uje tvoje izmene:
 
-**1. Fork the repo on GitHub**
+**1. Fork repo na GitHub-u**
 
-**2. Update the ArgoCD application to point to your fork:**
+**2. Ažurirati ArgoCD aplikaciju da pokazuje na tvoj fork:**
 ```yaml
 # deploy/argocd/bookstore-app.yaml
 spec:
   source:
-    repoURL: https://github.com/YOUR-USERNAME/chaos-engineering-sandbox.git
+    repoURL: https://github.com/TVOJE-IME/chaos-engineering-sandbox.git
 ```
 
-**3. Update image names in the CD workflow:**
+**3. Ažurirati nazive slika u CD workflow-u:**
 ```yaml
-# .github/workflows/cd.yml — replace all occurrences of darko999 with your Docker Hub username
-image: YOUR-DOCKERHUB-USERNAME/api-gateway
-# ... repeat for each service
+# .github/workflows/cd.yml — zameniti sve pojave darko999 sa tvojim Docker Hub korisničkim imenom
+image: TVOJE-DOCKERHUB-IME/api-gateway
+# ... ponoviti za svaki servis
 ```
 
-**4. Update image names in the kustomization overlay:**
+**4. Ažurirati nazive slika u kustomization overlay-u:**
 ```yaml
-# deploy/overlays/kind/kustomization.yaml — replace darko999 with your Docker Hub username
+# deploy/overlays/kind/kustomization.yaml — zameniti darko999 sa tvojim Docker Hub korisničkim imenom
 images:
-- name: YOUR-DOCKERHUB-USERNAME/api-gateway
-  newName: YOUR-DOCKERHUB-USERNAME/api-gateway
+- name: TVOJE-DOCKERHUB-IME/api-gateway
+  newName: TVOJE-DOCKERHUB-IME/api-gateway
 ```
 
-**5. Add GitHub Actions secrets** in your fork's Settings → Secrets → Actions:
+**5. Dodati GitHub Actions secrets** u Settings → Secrets → Actions svog forka:
 ```
-DOCKER_USERNAME   your Docker Hub username
-DOCKER_PASSWORD   your Docker Hub access token
+DOCKER_USERNAME   tvoje Docker Hub korisničko ime
+DOCKER_PASSWORD   tvoj Docker Hub access token
 ```
 
-**6. Run the stack:**
+**6. Pokrenuti stack:**
 ```bash
 make cluster-up
 ```
 
-From this point, every push to `main` will automatically build new images, update image tags, and ArgoCD will deploy to your local cluster.
+Od ovog trenutka, svaki push na `main` automatski gradi nove slike, ažurira tagove slika, a ArgoCD deploy-uje na lokalni klaster.
