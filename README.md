@@ -13,15 +13,38 @@ Aplikacija knjižare zasnovana na mikroservisima, napravljena kao platforma za c
 
 6 FastAPI mikroservisa koji komuniciraju putem REST-a i RabbitMQ event-a, deployovani na Kubernetes-u sa punim observability i chaos engineering stack-om.
 
-```
-Frontend (React)
-    └── API Gateway  ← circuit breaker po downstream servisu
-         ├── Auth Service      → PostgreSQL
-         ├── Book Service      → PostgreSQL
-         ├── Order Service     → PostgreSQL → RabbitMQ
-         └── Inventory Service → PostgreSQL ← RabbitMQ
-                                               ↑
-                                    Notification Service
+```mermaid
+flowchart TD
+    Client(["Klijent / k6"])
+
+    GW["api-gateway<br/>(circuit breakers)"]
+
+    BS["book-service"]
+    AS["auth-service"]
+    OS["order-service"]
+    IS["inventory-service"]
+    NS["notification-service"]
+
+    MQ[["RabbitMQ<br/>orders.events"]]
+
+    PB[("postgres-book")]
+    PA[("postgres-auth")]
+    PO[("postgres-order")]
+    PI[("postgres-inventory")]
+
+    Client -->|HTTP| GW
+
+    GW -->|HTTP + CB| BS & AS & OS & IS
+
+    OS -.->|"validacija tokena"| AS
+
+    OS -->|publish order.created| MQ
+    MQ -->|order.created| IS & NS
+
+    BS --- PB
+    AS --- PA
+    OS --- PO
+    IS --- PI
 ```
 
 ---
