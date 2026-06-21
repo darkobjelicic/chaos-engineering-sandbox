@@ -10,3 +10,4 @@ ADR dokumenti beleže važne arhitekturne odluke — šta je odlučeno, zašto i
 |---|---|---|---|
 | [ADR-001](ADR-001-circuit-breaker.md) | Circuit Breaker u api-gateway | Prihvaćeno | 26.05.2026. |
 | [ADR-002](ADR-002-asyncio-thread-pool.md) | asyncio.to_thread za httpx pozive | Prihvaćeno | 07.06.2026. |
+| [ADR-003](ADR-003-probe-timeout.md) | Liveness/Readiness Probe Timeout — 5s | Prihvaćeno | 07.06.2026. |

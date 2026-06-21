@@ -13,15 +13,38 @@ A microservices-based bookstore application built as a platform for chaos engine
 
 6 FastAPI microservices communicating via REST and RabbitMQ events, deployed on Kubernetes with a full observability and chaos engineering stack.
 
-```
-Frontend (React)
-    └── API Gateway  ← circuit breaker per downstream service
-         ├── Auth Service      → PostgreSQL
-         ├── Book Service      → PostgreSQL
-         ├── Order Service     → PostgreSQL → RabbitMQ
-         └── Inventory Service → PostgreSQL ← RabbitMQ
-                                               ↑
-                                    Notification Service
+```mermaid
+flowchart TD
+    Client(["Client / k6"])
+
+    GW["api-gateway<br/>(circuit breakers)"]
+
+    BS["book-service"]
+    AS["auth-service"]
+    OS["order-service"]
+    IS["inventory-service"]
+    NS["notification-service"]
+
+    MQ[["RabbitMQ<br/>orders.events"]]
+
+    PB[("postgres-book")]
+    PA[("postgres-auth")]
+    PO[("postgres-order")]
+    PI[("postgres-inventory")]
+
+    Client -->|HTTP| GW
+
+    GW -->|HTTP + CB| BS & AS & OS & IS
+
+    OS -.->|"token validation"| AS
+
+    OS -->|publish order.created| MQ
+    MQ -->|order.created| IS & NS
+
+    BS --- PB
+    AS --- PA
+    OS --- PO
+    IS --- PI
 ```
 
 ---
