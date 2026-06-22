@@ -10,7 +10,7 @@ export default function Inventory(){
 
   // Učitaj knjige
   useEffect(()=>{
-    axios.get('http://localhost:8000/books')
+    axios.get('http://api.bookstore.local/books')
       .then(r=> {
         setBooks(r.data || [])
         setBooksLoading(false)
@@ -23,7 +23,7 @@ export default function Inventory(){
 
   // Učitaj zalihе
   useEffect(()=>{
-    axios.get('http://localhost:8000/inventory')
+    axios.get('http://api.bookstore.local/inventory')
       .then(r=> {
         setInventory(r.data || [])
         setLoading(false)

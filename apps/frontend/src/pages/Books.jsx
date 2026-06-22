@@ -7,7 +7,7 @@ export default function Books(){
   const [error, setError] = useState(null)
 
   useEffect(()=>{
-    axios.get('http://localhost:8000/books')
+    axios.get('http://api.bookstore.local/books')
       .then(r=> {
         setBooks(r.data || [])
         setLoading(false)

@@ -29,7 +29,7 @@ export default function Orders(){
 
   // Učitaj knjige
   useEffect(()=>{
-    axios.get('http://localhost:8000/books')
+    axios.get('http://api.bookstore.local/books')
       .then(r=> {
         setBooks(r.data || [])
         setBooksLoading(false)
@@ -50,7 +50,7 @@ export default function Orders(){
     const token = localStorage.getItem('token')
     const headers = token ? { Authorization: `Bearer ${token}` } : {}
 
-    axios.get('http://localhost:8000/orders', { headers })
+    axios.get('http://api.bookstore.local/orders', { headers })
       .then(r=> {
         const all = r.data || []
         if (currentUser && currentUser.id) {
@@ -71,7 +71,7 @@ export default function Orders(){
   useEffect(() => {
     const token = localStorage.getItem('token')
     if (!token) return
-    axios.get('http://localhost:8000/auth/me', { headers: { Authorization: `Bearer ${token}` } })
+    axios.get('http://api.bookstore.local/auth/me', { headers: { Authorization: `Bearer ${token}` } })
       .then(r => setCurrentUser(r.data))
       .catch(err => console.warn('Ne mogu dohvatiti trenutnog korisnika:', err))
   }, [])
@@ -137,7 +137,7 @@ export default function Orders(){
 
     const payload = { ...formData, user_id: currentUser.id }
 
-    axios.post('http://localhost:8000/orders', payload, { headers })
+    axios.post('http://api.bookstore.local/orders', payload, { headers })
       .then(r=> {
         setSubmitSuccess(true)
         setFormData({ user_id: 1, book_id: 1, quantity: 1 })

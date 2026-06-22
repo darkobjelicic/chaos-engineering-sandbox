@@ -15,7 +15,7 @@ export default function Register(){
     setLoading(true)
     setError(null)
     try {
-      const r = await axios.post('http://localhost:8000/auth/register', { name, email, password })
+      const r = await axios.post('http://api.bookstore.local/auth/register', { name, email, password })
       const token = r.data.access_token
       if (token) {
         localStorage.setItem('token', token)
