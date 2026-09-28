@@ -95,28 +95,9 @@ pre-commit --version
 
 ---
 
-## Lokalni razvoj (Docker Compose)
+## Lokalni razvoj aplikacije (bez Kubernetesa)
 
-Pokretanje svih servisa lokalno bez Kubernetesa:
-
-```bash
-cp .env.example .env   # izmeniti vrednosti po potrebi
-make dev-up
-```
-
-Servisi dostupni na:
-
-| Servis | URL |
-|---------|-----|
-| Frontend | http://localhost:3000 |
-| API Gateway | http://localhost:8000 |
-| RabbitMQ UI | http://localhost:15672 (guest/guest) |
-| Adminer (DB) | http://localhost:8081 |
-
-Gašenje:
-```bash
-make dev-down
-```
+Sam kod aplikacije (mikroservisi + frontend) živi u odvojenom repo-u: [bookstore-microservices](https://github.com/darkobjelicic/bookstore-microservices). Tamo se nalazi i Docker Compose setup za lokalni razvoj bez Kubernetesa — pogledaj README tog repo-a.
 
 ---
 
@@ -200,9 +181,9 @@ Dodati u `/etc/hosts`:
 
 ### Scenario B — Fork i preuzmi ceo pipeline
 
-Ako želiš sopstveni CI/CD pipeline koji gradi i deploy-uje tvoje izmene:
+Aplikacija (build slika) i chaos infrastruktura (deploy, GitOps, chaos eksperimenti) su u dva odvojena repo-a: [bookstore-microservices](https://github.com/darkobjelicic/bookstore-microservices) i ovaj. Za sopstveni end-to-end pipeline treba fork-ovati oba.
 
-**1. Fork repo na GitHub-u**
+**1. Fork oba repo-a na GitHub-u**
 
 **2. Ažurirati ArgoCD aplikaciju da pokazuje na tvoj fork:**
 ```yaml
@@ -212,30 +193,22 @@ spec:
     repoURL: https://github.com/TVOJE-IME/chaos-engineering-sandbox.git
 ```
 
-**3. Ažurirati nazive slika u CD workflow-u:**
-```yaml
-# .github/workflows/cd.yml — zameniti sve pojave darko999 sa tvojim Docker Hub korisničkim imenom
-image: TVOJE-DOCKERHUB-IME/api-gateway
-# ... ponoviti za svaki servis
+**3. Ažurirati nazive slika** u `bookstore-microservices/.github/workflows/cd.yml` i u `deploy/overlays/kind/kustomization.yaml` ovde — zameniti sve pojave `darko999` svojim Docker Hub korisničkim imenom.
+
+**4. Dodati GitHub Actions secrets:**
+
+U fork-u `bookstore-microservices`:
+```
+DOCKER_USERNAME                tvoje Docker Hub korisničko ime
+DOCKER_PASSWORD                tvoj Docker Hub access token
+CHAOS_SANDBOX_DISPATCH_TOKEN   GitHub PAT sa pristupom tvom fork-u chaos-engineering-sandbox (repository_dispatch okida update-tags tamo)
 ```
 
-**4. Ažurirati nazive slika u kustomization overlay-u:**
-```yaml
-# deploy/overlays/kind/kustomization.yaml — zameniti darko999 sa tvojim Docker Hub korisničkim imenom
-images:
-- name: TVOJE-DOCKERHUB-IME/api-gateway
-  newName: TVOJE-DOCKERHUB-IME/api-gateway
-```
-
-**5. Dodati GitHub Actions secrets** u Settings → Secrets → Actions svog forka:
-```
-DOCKER_USERNAME   tvoje Docker Hub korisničko ime
-DOCKER_PASSWORD   tvoj Docker Hub access token
-```
+**5. Ažurirati repository dispatch cilj** u `bookstore-microservices/.github/workflows/cd.yml` (`repository: darkobjelicic/chaos-engineering-sandbox` → tvoj fork).
 
 **6. Pokrenuti stack:**
 ```bash
 make cluster-up
 ```
 
-Od ovog trenutka, svaki push na `main` automatski gradi nove slike, ažurira tagove slika, a ArgoCD deploy-uje na lokalni klaster.
+Od ovog trenutka, svaki push na `main` u `bookstore-microservices` gradi i push-uje nove slike, okida `repository_dispatch` koji ažurira tagove ovde, a ArgoCD deploy-uje na lokalni klaster.

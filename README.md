@@ -4,8 +4,9 @@
 
 Aplikacija knjižare zasnovana na mikroservisima, napravljena kao platforma za chaos engineering eksperimente. Demonstrira production-grade DevOps setup koji uključuje GitOps, full-stack observability, load testing i kontrolisano ubacivanje kvarova putem Chaos Mesh-a.
 
-![CI](https://github.com/darkobjelicic/chaos-engineering-sandbox/actions/workflows/ci.yml/badge.svg)
-![CD](https://github.com/darkobjelicic/chaos-engineering-sandbox/actions/workflows/cd.yml/badge.svg)
+Kod same aplikacije (mikroservisi + frontend) živi u odvojenom repo-u: [bookstore-microservices](https://github.com/darkobjelicic/bookstore-microservices). Ovaj repo sadrži samo chaos-testing infrastrukturu (deploy, GitOps, observability, load testing, chaos eksperimenti) i deploy-uje gotove slike iz tog repo-a.
+
+
 
 ---
 
@@ -113,7 +114,7 @@ make cluster-down
 
 **Clone i pokreni** — radi odmah, bez podešavanja. Sve slike su javne na Docker Hub-u, ArgoCD se sinhronizuje iz ovog javnog repo-a.
 
-**Fork i preuzmi pipeline** — ažurirati `repoURL` u `deploy/argocd/bookstore-app.yaml`, nazive slika u `cd.yml` i `kustomization.yaml`, i dodati `DOCKER_USERNAME` / `DOCKER_PASSWORD` kao GitHub Actions secrets.
+**Fork i preuzmi pipeline** — fork-ovati i ovaj repo i [bookstore-microservices](https://github.com/darkobjelicic/bookstore-microservices), ažurirati `repoURL` u `deploy/argocd/bookstore-app.yaml`, nazive slika u oba repo-a, i dodati Docker Hub / `repository_dispatch` secrets — detalji ispod.
 
 Detaljna uputstva: [docs/local-setup.md](docs/local-setup.md#pokretanje-na-sopstvenoj-masini-dva-scenarija).
 
