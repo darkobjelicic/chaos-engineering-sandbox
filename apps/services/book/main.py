@@ -99,30 +99,16 @@ def on_startup():
             existing = session.exec(select(Book)).all()
             if len(existing) == 0:
                 test_books = [
-                    Book(
-                        title="Rat i mir",
-                        author="Lav Tolstoj",
-                        price=25.99,
-                        description="Klasični roman o ljubavi, ratu i istoriji",
-                    ),
-                    Book(
-                        title="Prestupljenje i kazna",
-                        author="Fjodor Dostojevski",
-                        price=22.50,
-                        description="Psihološki roman o krivici i iskupljenju",
-                    ),
-                    Book(
-                        title="Ponos i predrasuda",
-                        author="Džein Ostin",
-                        price=18.99,
-                        description="Romantični roman iz 19. veka",
-                    ),
-                    Book(
-                        title="Devet priča",
-                        author="Isak Asimov",
-                        price=15.75,
-                        description="Zbirka naučnofantastičnih priča",
-                    ),
+                    Book(title="Na Drini ćuprija", author="Ivo Andrić", price=1190, description="Roman o životu na mostu u Višegradu kroz vekove"),
+                    Book(title="Derviš i smrt", author="Meša Selimović", price=990, description="Roman o krivici, vlasti i unutrašnjoj borbi čoveka"),
+                    Book(title="Seobe", author="Miloš Crnjanski", price=890, description="Roman o sudbini srpskog naroda i potrazi za srećom"),
+                    Book(title="Zločin i kazna", author="Fjodor Dostojevski", price=1100, description="Psihološki roman o krivici, iskupljenju i moralu"),
+                    Book(title="Ana Karenjina", author="Lav Tolstoj", price=1250, description="Roman o ljubavi, društvu i tragičnoj sudbini"),
+                    Book(title="Braća Karamazovi", author="Fjodor Dostojevski", price=1490, description="Filozofski roman o veri, slobodi i porodičnoj drami"),
+                    Book(title="Majstor i Margarita", author="Mihail Bulgakov", price=1150, description="Satirični roman o đavolu koji dolazi u Moskvu"),
+                    Book(title="Idiot", author="Fjodor Dostojevski", price=1200, description="Roman o čistom i plemenitom čoveku u pokvarenom svetu"),
+                    Book(title="Mrtve duše", author="Nikolaj Gogolj", price=950, description="Satirični roman o korupciji i pohlepi u carskoj Rusiji"),
+                    Book(title="Rat i mir", author="Lav Tolstoj", price=1350, description="Epski roman o Napoleonovim ratovima i ruskom društvu"),
                 ]
                 for book in test_books:
                     session.add(book)

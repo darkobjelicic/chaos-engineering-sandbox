@@ -211,6 +211,12 @@ async def startup():
                     Inventory(book_id=2, quantity=30),
                     Inventory(book_id=3, quantity=45),
                     Inventory(book_id=4, quantity=20),
+                    Inventory(book_id=5, quantity=30),
+                    Inventory(book_id=6, quantity=30),
+                    Inventory(book_id=7, quantity=30),
+                    Inventory(book_id=8, quantity=30),
+                    Inventory(book_id=9, quantity=30),
+                    Inventory(book_id=10, quantity=30),
                 ]
                 for item in test_items:
                     session.add(item)
