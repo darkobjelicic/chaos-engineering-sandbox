@@ -4,6 +4,8 @@
 
 A microservices-based bookstore application built as a platform for chaos engineering experiments. Demonstrates a production-grade DevOps setup including GitOps, full-stack observability, load testing, and controlled failure injection via Chaos Mesh.
 
+The application code (microservices + frontend) lives in a separate repo: [bookstore-microservices](https://github.com/darkobjelicic/bookstore-microservices). This repo contains only the chaos-testing infrastructure (deploy, GitOps, observability, load testing, chaos experiments) and deploys pre-built images from that repo.
+
 ![CI](https://github.com/darkobjelicic/chaos-engineering-sandbox/actions/workflows/ci.yml/badge.svg)
 ![CD](https://github.com/darkobjelicic/chaos-engineering-sandbox/actions/workflows/cd.yml/badge.svg)
 
@@ -113,7 +115,7 @@ make cluster-down
 
 **Clone and run** — just works, no configuration needed. All images are public on Docker Hub, ArgoCD syncs from this public repo.
 
-**Fork and own the pipeline** — update `repoURL` in `deploy/argocd/bookstore-app.yaml`, image names in `cd.yml` and `kustomization.yaml`, and add `DOCKER_USERNAME` / `DOCKER_PASSWORD` as GitHub Actions secrets.
+**Fork and own the pipeline** — fork both this repo and [bookstore-microservices](https://github.com/darkobjelicic/bookstore-microservices), update `repoURL` in `deploy/argocd/bookstore-app.yaml`, image names in both repos, and add the Docker Hub / `repository_dispatch` secrets — details below.
 
 Full details in [docs/local-setup.en.md](docs/local-setup.en.md#running-on-your-machine-two-scenarios).
 

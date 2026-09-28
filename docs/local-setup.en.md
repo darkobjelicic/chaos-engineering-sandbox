@@ -95,28 +95,9 @@ pre-commit --version
 
 ---
 
-## Local Development (Docker Compose)
+## Local Application Development (without Kubernetes)
 
-Start all services locally without Kubernetes:
-
-```bash
-cp .env.example .env   # edit values if needed
-make dev-up
-```
-
-Services available at:
-
-| Service | URL |
-|---------|-----|
-| Frontend | http://localhost:3000 |
-| API Gateway | http://localhost:8000 |
-| RabbitMQ UI | http://localhost:15672 (guest/guest) |
-| Adminer (DB) | http://localhost:8081 |
-
-Stop:
-```bash
-make dev-down
-```
+The application code (microservices + frontend) lives in a separate repo: [bookstore-microservices](https://github.com/darkobjelicic/bookstore-microservices). That repo has the Docker Compose setup for running everything locally without Kubernetes — see its README.
 
 ---
 
@@ -200,9 +181,9 @@ Add to `/etc/hosts`:
 
 ### Scenario B — Fork and own the full pipeline
 
-If you want your own CI/CD pipeline that builds and deploys your changes:
+The application (image builds) and the chaos infrastructure (deploy, GitOps, chaos experiments) live in two separate repos: [bookstore-microservices](https://github.com/darkobjelicic/bookstore-microservices) and this one. For your own end-to-end pipeline, fork both.
 
-**1. Fork the repo on GitHub**
+**1. Fork both repos on GitHub**
 
 **2. Update the ArgoCD application to point to your fork:**
 ```yaml
@@ -212,30 +193,22 @@ spec:
     repoURL: https://github.com/YOUR-USERNAME/chaos-engineering-sandbox.git
 ```
 
-**3. Update image names in the CD workflow:**
-```yaml
-# .github/workflows/cd.yml — replace all occurrences of darko999 with your Docker Hub username
-image: YOUR-DOCKERHUB-USERNAME/api-gateway
-# ... repeat for each service
+**3. Update image names** in `bookstore-microservices/.github/workflows/cd.yml` and in `deploy/overlays/kind/kustomization.yaml` here — replace all occurrences of `darko999` with your Docker Hub username.
+
+**4. Add GitHub Actions secrets:**
+
+In your `bookstore-microservices` fork:
+```
+DOCKER_USERNAME                your Docker Hub username
+DOCKER_PASSWORD                your Docker Hub access token
+CHAOS_SANDBOX_DISPATCH_TOKEN   GitHub PAT with access to your chaos-engineering-sandbox fork (repository_dispatch triggers update-tags there)
 ```
 
-**4. Update image names in the kustomization overlay:**
-```yaml
-# deploy/overlays/kind/kustomization.yaml — replace darko999 with your Docker Hub username
-images:
-- name: YOUR-DOCKERHUB-USERNAME/api-gateway
-  newName: YOUR-DOCKERHUB-USERNAME/api-gateway
-```
-
-**5. Add GitHub Actions secrets** in your fork's Settings → Secrets → Actions:
-```
-DOCKER_USERNAME   your Docker Hub username
-DOCKER_PASSWORD   your Docker Hub access token
-```
+**5. Update the repository dispatch target** in `bookstore-microservices/.github/workflows/cd.yml` (`repository: darkobjelicic/chaos-engineering-sandbox` → your fork).
 
 **6. Run the stack:**
 ```bash
 make cluster-up
 ```
 
-From this point, every push to `main` will automatically build new images, update image tags, and ArgoCD will deploy to your local cluster.
+From this point, every push to `main` in `bookstore-microservices` builds and pushes new images, triggers a `repository_dispatch` that updates image tags here, and ArgoCD deploys to your local cluster.

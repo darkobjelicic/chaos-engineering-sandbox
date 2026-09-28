@@ -44,7 +44,7 @@ export default function (data) {
       const books = http.get(`${BASE_URL}/books`);
       check(books, { "books 200": (r) => r.status === 200 });
 
-      const book = http.get(`${BASE_URL}/books/${Math.ceil(Math.random() * 4)}`);
+      const book = http.get(`${BASE_URL}/books/${Math.ceil(Math.random() * 10)}`);
       check(book, { "book 200": (r) => r.status === 200 });
 
       const inv = http.get(`${BASE_URL}/inventory`);
@@ -55,7 +55,7 @@ export default function (data) {
       if (!data.token) return;
       const res = http.post(
         `${BASE_URL}/orders`,
-        JSON.stringify({ book_id: Math.ceil(Math.random() * 4), quantity: 1 }),
+        JSON.stringify({ book_id: Math.ceil(Math.random() * 10), quantity: 1 }),
         {
           headers: {
             "Content-Type": "application/json",
